@@ -1,0 +1,1799 @@
+<!doctype html>
+<html class="scroll-smooth" lang="en" data-glow="off">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width,initial-scale=1.0" name="viewport" />
+    <script>
+      (function () {
+        var KEY = "__adminReloadAt";
+        function mark() {
+          try {
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (e) {}
+        }
+        function recent() {
+          try {
+            return Date.now() - Number(sessionStorage.getItem(KEY) || 0) < 5000;
+          } catch (e) {
+            return false;
+          }
+        }
+        function sched(fromAdmin) {
+          if (!fromAdmin && recent()) return;
+          if (fromAdmin) mark();
+          clearTimeout(window.__rt);
+          window.__rt = setTimeout(
+            function () {
+              location.reload();
+            },
+            fromAdmin ? 150 : 700,
+          );
+        }
+        try {
+          window.__bc = new BroadcastChannel("portfolio-admin");
+          window.__bc.onmessage = function () {
+            sched(true);
+          };
+        } catch (e) {}
+        var N = window.WebSocket;
+        if (!N) return;
+        function W(url, p) {
+          var ws = p ? new N(url, p) : new N(url);
+          if (/\/ws$/.test(String(url))) {
+            Object.defineProperty(ws, "onmessage", {
+              set: function (fn) {
+                ws.addEventListener("message", function (e) {
+                  if (e.data === "reload") sched(false);
+                  else if (fn) fn.call(ws, e);
+                });
+              },
+            });
+          }
+          return ws;
+        }
+        W.prototype = N.prototype;
+        W.CONNECTING = 0;
+        W.OPEN = 1;
+        W.CLOSING = 2;
+        W.CLOSED = 3;
+        window.WebSocket = W;
+      })();
+    </script>
+    <title>Portfolio</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              bgDark: "#07080f",
+              cardBg: "#0b1017",
+              accentGold: "rgb(var(--gold-rgb, 251 191 36) / <alpha-value>)",
+              amber: {
+                400: "rgb(var(--gold-rgb, 251 191 36) / <alpha-value>)",
+              },
+              brand: {
+                light:
+                  "rgb(var(--brand-light-rgb, 152 226 198) / <alpha-value>)",
+                DEFAULT: "rgb(var(--brand-rgb, 101 184 145) / <alpha-value>)",
+                dark: "rgb(var(--brand-dark-rgb, 78 159 118) / <alpha-value>)",
+                deep: "#367254",
+              },
+            },
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', "sans-serif"],
+              script: ['"Caveat"', "cursive"],
+              mono: ['"JetBrains Mono"', "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background-color: var(--site-bg, #07080f);
+        color: #f1f5f9;
+        font-family: var(--font-body, "Plus Jakarta Sans", sans-serif);
+        overflow-x: hidden;
+        position: relative;
+      }
+      ::selection {
+        background: var(--brand, #65b891);
+        color: #07080f;
+      }
+
+      section {
+        scroll-margin-top: 86px;
+      }
+
+      .bg-poster-grid {
+        background-color: #07080f;
+        background-image:
+          radial-gradient(
+            circle at 50% 12%,
+            rgba(var(--glow-rgb, 101, 184, 145), 0.14) 0%,
+            transparent 48%
+          ),
+          radial-gradient(
+            circle at 82% 60%,
+            rgb(var(--gold-rgb, 251 191 36) / 0.08) 0%,
+            transparent 45%
+          ),
+          radial-gradient(
+            circle at 18% 75%,
+            rgba(var(--glow-rgb, 101, 184, 145), 0.09) 0%,
+            transparent 42%
+          ),
+          linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.022) 1px,
+            transparent 1px
+          );
+        background-size:
+          100% 100%,
+          100% 100%,
+          100% 100%,
+          54px 54px,
+          54px 54px;
+      }
+
+      /* Animations */
+      @keyframes scriptShimmer {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 12px rgb(var(--gold-rgb, 251 191 36) / 0.45));
+          transform: rotate(-3.5deg) scale(1);
+        }
+        50% {
+          filter: drop-shadow(0 0 22px rgb(var(--gold-rgb, 251 191 36) / 0.85));
+          transform: rotate(-2deg) scale(1.035);
+        }
+      }
+
+      @keyframes titleGlowBreathe {
+        0%,
+        100% {
+          letter-spacing: -0.04em;
+          text-shadow: 0 0 25px rgba(255, 255, 255, 0.06);
+        }
+        50% {
+          letter-spacing: -0.02em;
+          text-shadow: 0 0 45px rgba(var(--glow-rgb, 101, 184, 145), 0.35);
+        }
+      }
+
+      @keyframes floatingDoodle {
+        0%,
+        100% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        33% {
+          transform: translate(6px, -10px) rotate(4deg);
+        }
+        66% {
+          transform: translate(-7px, 6px) rotate(-3deg);
+        }
+      }
+
+      @keyframes floatCard {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      @keyframes pulseGlowEmerald {
+        0%,
+        100% {
+          box-shadow: 0 0 20px -5px rgba(var(--glow-rgb, 101, 184, 145), 0.25);
+          border-color: rgba(var(--glow-rgb, 101, 184, 145), 0.35);
+        }
+        50% {
+          box-shadow: 0 0 35px 2px rgba(var(--glow-rgb, 101, 184, 145), 0.55);
+          border-color: rgba(var(--glow-rgb, 101, 184, 145), 0.8);
+        }
+      }
+
+      .animate-script-live {
+        animation: scriptShimmer 4.2s ease-in-out infinite;
+        transform-origin: center;
+      }
+
+      .animate-title-breathe {
+        animation: titleGlowBreathe 5.5s ease-in-out infinite;
+      }
+
+      .floating-squiggle {
+        animation: floatingDoodle 7.5s ease-in-out infinite;
+      }
+
+      .floating-squiggle-reverse {
+        animation: floatingDoodle 9s ease-in-out infinite reverse;
+      }
+
+      .floating-terminal-card {
+        animation: floatCard 6s ease-in-out infinite;
+      }
+
+      .contact-glow-pulse {
+        animation: pulseGlowEmerald 4s ease-in-out infinite;
+      }
+
+      /* Gradient alive text */
+      .kinetic-gradient-text {
+        background: linear-gradient(
+          90deg,
+          var(--grad-edge, #ffffff) 0%,
+          var(--grad-1, #98e2c6) 30%,
+          var(--grad-2, #65b891) 60%,
+          var(--grad-edge, #ffffff) 100%
+        );
+        background-size: 240% auto;
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: gradientShift 6s linear infinite;
+      }
+
+      /* Glass Panels */
+      .glass-panel {
+        background: rgba(11, 16, 23, 0.82);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .glass-panel:hover {
+        border-color: rgba(var(--glow-rgb, 101, 184, 145), 0.5);
+        box-shadow: 0 16px 36px -10px rgba(var(--glow-rgb, 101, 184, 145), 0.22);
+      }
+
+      .stat-card {
+        background: linear-gradient(
+          175deg,
+          rgba(14, 21, 30, 0.85) 0%,
+          rgba(9, 13, 19, 0.9) 100%
+        );
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition:
+          transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+          border-color 0.3s ease,
+          box-shadow 0.3s ease;
+      }
+      .stat-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        border-color: var(--brand, #65b891);
+        box-shadow: 0 16px 32px -8px rgba(var(--glow-rgb, 101, 184, 145), 0.3);
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--brand, #65b891) 0%,
+          var(--brand-dark, #46966f) 100%
+        );
+        box-shadow: 0 4px 20px -3px rgba(var(--glow-rgb, 101, 184, 145), 0.5);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px -4px rgba(var(--glow-rgb, 101, 184, 145), 0.7);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.09);
+        border-color: rgba(var(--glow-rgb, 101, 184, 145), 0.5);
+        transform: translateY(-2px);
+      }
+
+      /* Nav Item styling */
+      .nav-link {
+        position: relative;
+        transition: color 0.2s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .nav-link.active-nav {
+        color: var(--brand-light, #98e2c6);
+        font-weight: 600;
+      }
+      .nav-link.active-nav::after {
+        content: "";
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--brand, #65b891);
+        border-radius: 9999px;
+        box-shadow: 0 0 10px rgba(var(--glow-rgb, 101, 184, 145), 0.9);
+      }
+
+      /* Keeps the 8-link nav on ONE line on small screens (scrolls sideways
+         instead of wrapping out of the fixed-height header) */
+      .nav-scroll {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .nav-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* Typing Cursor */
+      .typed-cursor {
+        display: inline-block;
+        margin-left: 3px;
+        animation: blinkCursor 0.85s infinite;
+        color: var(--brand, #65b891);
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(var(--glow-rgb, 101, 184, 145), 0.8);
+      }
+      @keyframes blinkCursor {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /* Scroll reveal items */
+      .reveal-item {
+        opacity: 0;
+        transform: translateY(28px);
+        transition:
+          opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+      }
+      .reveal-item.revealed {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Stagger item classes */
+      .stagger-child {
+        opacity: 0;
+        transform: translateY(24px) scale(0.96);
+        transition:
+          opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .revealed .stagger-child:not(:hover) {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .revealed .stagger-child {
+        opacity: 1;
+      }
+
+      /* Progress Bars */
+      .skill-bar-fill {
+        width: 0%;
+        transition: width 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 0 12px rgba(var(--glow-rgb, 101, 184, 145), 0.4);
+      }
+
+      /* Code card line hover */
+      .code-line {
+        transition: background-color 0.2s ease;
+        border-radius: 4px;
+      }
+      .code-line:hover {
+        background-color: rgba(var(--glow-rgb, 101, 184, 145), 0.12);
+      }
+
+      .icon-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 3rem;
+      }
+      .sk-card {
+        background: rgba(11, 16, 23, 0.82);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 1.2rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.55rem;
+        transition:
+          transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+          border-color 0.25s,
+          box-shadow 0.25s;
+        cursor: default;
+        min-width: 88px;
+      }
+      .sk-card:hover {
+        transform: translateY(-6px) scale(1.04);
+        border-color: rgba(var(--glow-rgb, 101, 184, 145), 0.5);
+        box-shadow: 0 16px 36px -10px rgba(var(--glow-rgb, 101, 184, 145), 0.3);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+        .reveal-item,
+        .stagger-child {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+        .skill-bar-fill {
+          width: var(--target-width) !important;
+        }
+      }
+
+      /* Admin-controlled theme hooks (values live in #theme-vars) */
+      html {
+        font-size: var(--font-size, 16px);
+      }
+      header.fixed {
+        background-color: color-mix(
+          in srgb,
+          var(--site-bg, #07080f) 85%,
+          transparent
+        ) !important;
+      }
+      footer {
+        background-color: color-mix(
+          in srgb,
+          var(--site-bg, #07080f) 60%,
+          #000
+        ) !important;
+      }
+      /* Hero image size (set from the admin panel; 100 = normal) */
+      #home img {
+        /* Phones / tablets (stacked layout): can shrink, never grow past the screen */
+        width: calc(min(var(--hero-scale, 100), 100) * 1%);
+        max-width: calc(36rem * min(var(--hero-scale, 100), 100) / 100);
+        height: auto;
+        flex: none;
+        object-fit: contain;
+      }
+      @media (min-width: 1024px) {
+        /* Desktop (two-column layout): full range from the admin slider */
+        #home img {
+          width: calc(var(--hero-scale, 100) * 1%);
+          /* grows with the slider, but stops before it would be cut off at the right edge of the screen */
+          max-width: min(
+            calc(36rem * var(--hero-scale, 100) / 100),
+            calc(100vw - min(72rem, 100vw - 3rem) / 2 - 1.75rem)
+          );
+        }
+      }
+      /* Glow switch (set from the admin panel via <html data-glow="off">) */
+      html[data-glow="off"] *,
+      html[data-glow="off"] *::before,
+      html[data-glow="off"] *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+      }
+      html[data-glow="off"] .animate-script-live,
+      html[data-glow="off"] .animate-title-breathe,
+      html[data-glow="off"] .contact-glow-pulse {
+        animation: none !important;
+        filter: none !important;
+      }
+    </style>
+    <style id="theme-vars">
+      :root {
+        --brand: #65b891;
+        --brand-rgb: 101 184 145;
+        --brand-light: #98e2c6;
+        --brand-light-rgb: 152 226 198;
+        --brand-dark: #4e9f76;
+        --brand-dark-rgb: 78 159 118;
+        --gold: #fbbf24;
+        --gold-rgb: 251 191 36;
+        --glow-rgb: 101, 184, 145;
+        --grad-edge: #ffffff;
+        --grad-1: #98e2c6;
+        --grad-2: #65b891;
+        --site-bg: #07080f;
+        --font-body: "Plus Jakarta Sans", sans-serif;
+        --font-size: 16px;
+        --hero-scale: 155;
+      }
+    </style>
+    <noscript
+      ><style>
+        .reveal-item,
+        .stagger-child {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      </style></noscript
+    >
+  </head>
+  <body>
+    <!-- Header Navigation - Fixed with Glassmorphism -->
+    <header
+      class="fixed top-0 left-0 right-0 z-50 w-full border-b border-white/[0.08] bg-[#07080f]/85 backdrop-blur-xl transition-all"
+    >
+      <div
+        class="w-full px-6 sm:px-12 md:px-16 h-16 flex items-center justify-between gap-6"
+      >
+        <a
+          class="flex items-center gap-2 font-mono font-bold text-base tracking-tight text-white group shrink-0"
+          href="#home"
+        >
+          <span class="text-brand group-hover:text-amber-400 transition-colors"
+            >&lt;/&gt;</span
+          >
+          <span class="tracking-wide">Jeswin</span>
+        </a>
+        <nav
+          class="nav-scroll flex items-center gap-x-4 sm:gap-x-6 py-2 text-sm font-medium text-slate-300"
+        >
+          <a class="nav-link hover:text-white transition-colors" href="#home"
+            >Home</a
+          >
+          <a class="nav-link hover:text-white transition-colors" href="#about"
+            >About</a
+          >
+          <a class="nav-link hover:text-white transition-colors" href="#skills"
+            >Skills</a
+          >
+          <a
+            class="nav-link hover:text-white transition-colors"
+            href="#education"
+            >Education</a
+          >
+          <a
+            class="nav-link hover:text-white transition-colors"
+            href="#internships"
+            >Internships</a
+          >
+          <a
+            class="nav-link hover:text-white transition-colors"
+            href="#projects"
+            >Projects</a
+          >
+          <a class="nav-link hover:text-white transition-colors" href="#resume"
+            >Resume</a
+          >
+          <a class="nav-link hover:text-white transition-colors" href="#contact"
+            >Contact</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main
+      class="relative z-10 max-w-6xl mx-auto px-6 pt-2 md:pt-6 space-y-28 md:space-y-36"
+    >
+      <!-- ========================================================================= -->
+      <!-- 1. HERO SECTION                                                           -->
+      <!-- ========================================================================= -->
+      <section
+        class="flex flex-col items-center text-center pt-8 pb-4 relative"
+        id="home"
+      >
+        <!-- Centered Tagline & Subheading -->
+        <div
+          class="w-full max-w-6xl mx-auto mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center text-left"
+        >
+          <div class="lg:col-span-6 space-y-6">
+            <h1
+              class="text-3xl sm:text-5xl md:text-7xl font-extrabold text-slate-100 tracking-tight"
+            >
+              Hi I'm <span class="kinetic-gradient-text">Jeswin</span>
+            </h1>
+            <h2
+              class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight"
+            >
+              I like to build stuff.
+            </h2>
+            <div
+              class="flex items-center text-sm sm:text-base font-mono bg-black/50 border border-white/10 px-4 py-2 rounded-xl w-fit shadow-inner"
+            >
+              <span class="text-slate-400 mr-2">Specializing in:</span>
+              <span class="text-amber-400 font-semibold" id="typewriter-text"
+                >Web Developer</span
+              >
+              <span class="typed-cursor">|</span>
+            </div>
+            <p
+              class="text-slate-400 text-sm sm:text-base leading-relaxed max-w-xl"
+            >
+              I'm just a simple guy who loves computers, tech and to code all
+              day, building things like clean and simple web apps and desktop
+              applications along with database backend systems.
+            </p>
+            <div class="flex flex-wrap items-center gap-4 pt-1">
+              <a
+                class="btn-primary px-7 py-3 rounded-xl font-bold text-sm text-[#07080f] inline-flex items-center gap-2 group shadow-lg"
+                href="#projects"
+              >
+                <span>View My Work</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4 transition-transform group-hover:translate-x-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                  ></path>
+                </svg>
+              </a>
+              <a
+                class="btn-secondary px-7 py-3 rounded-xl font-medium text-sm text-slate-200 inline-flex items-center gap-2 group"
+                href="#contact"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4 text-amber-400 transition-transform group-hover:scale-110"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  ></path>
+                </svg>
+                <span>Get in Touch</span>
+              </a>
+            </div>
+            <div class="pt-4 border-t border-white/[0.08] space-y-3">
+              <div class="flex items-center gap-3">
+                <span
+                  class="text-xs font-bold uppercase tracking-wider text-slate-400"
+                  >Core Technologies</span
+                >
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <div
+                  class="px-3.5 py-1.5 rounded-lg flex items-center gap-2 text-xs text-slate-300 bg-white/[0.03] border border-white/[0.08] hover:border-brand hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                >
+                  <i class="devicon-html5-plain colored text-sm"></i>
+                  <span>HTML</span>
+                </div>
+                <div
+                  class="px-3.5 py-1.5 rounded-lg flex items-center gap-2 text-xs text-slate-300 bg-white/[0.03] border border-white/[0.08] hover:border-brand hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                >
+                  <i class="devicon-css3-plain colored text-sm"></i>
+                  <span>CSS</span>
+                </div>
+                <div
+                  class="px-3.5 py-1.5 rounded-lg flex items-center gap-2 text-xs text-slate-300 bg-white/[0.03] border border-white/[0.08] hover:border-brand hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                >
+                  <i class="devicon-javascript-plain colored text-sm"></i>
+                  <span>JavaScript</span>
+                </div>
+                <div
+                  class="px-3.5 py-1.5 rounded-lg flex items-center gap-2 text-xs text-slate-300 bg-white/[0.03] border border-white/[0.08] hover:border-brand hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                >
+                  <i class="devicon-python-plain colored text-sm"></i>
+                  <span>Python</span>
+                </div>
+                <div
+                  class="px-3.5 py-1.5 rounded-lg flex items-center gap-2 text-xs text-slate-300 bg-white/[0.03] border border-white/[0.08] hover:border-brand hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                >
+                  <i class="devicon-mysql-plain colored text-sm"></i>
+                  <span>MySQL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Profile photo placeholder -->
+          <div class="lg:col-span-6 flex justify-center">
+            <img
+              alt="Jeswin"
+              class="w-full max-w-xl h-auto"
+              src="Screenshots/me.png"
+            />
+          </div>
+        </div>
+      </section>
+      <!-- ========================================================================= -->
+      <!-- 2. ABOUT SECTION                                                          -->
+      <!-- ========================================================================= -->
+      <section class="space-y-10 reveal-item" id="about">
+        <div class="max-w-3xl mx-auto space-y-6 text-center">
+          <h2
+            class="text-5xl sm:text-6xl md:text-7xl font-black text-white tracking-tight uppercase leading-tight"
+          >
+            About <span class="kinetic-gradient-text">me</span>
+          </h2>
+          <div class="text-slate-400 text-lg leading-relaxed pt-2 space-y-5">
+            <p>
+              Yo I'm Jeswin, a programmer who's super into tech. Ever since I
+              was a kid I've loved computers and software, which sparked my
+              drive to design and create my own tools. A lot of what I build is
+              fueled by watching tech creators and others in the space make
+              their own products. It gives me that itch to go build something,
+              experiment, and try something new even if it fails. I am a simple
+              guy who loves tech, PC building, coding and anime. In my 12th I
+              have managed to secure 445/500 and currently doing my BCA degree
+              at Madras Christian College also currently living at
+              Valasaravakkam
+            </p>
+          </div>
+        </div>
+      </section>
+      <!-- ========================================================================= -->
+      <!-- 3. SKILLS SECTION                                                         -->
+      <!-- ========================================================================= -->
+      <section class="space-y-10 reveal-item" id="skills">
+        <div class="text-center max-w-xl mx-auto relative">
+          <h2
+            class="text-6xl sm:text-7xl font-black uppercase text-white tracking-tighter"
+          >
+            <span class="kinetic-gradient-text">SKILLS &amp;</span> TOOLS
+          </h2>
+        </div>
+        <div class="icon-grid reveal-item">
+          <div class="sk-card">
+            <i class="devicon-html5-plain colored"></i><span>HTML</span>
+          </div>
+          <div class="sk-card">
+            <i class="devicon-css3-plain colored"></i><span>CSS</span>
+          </div>
+          <div class="sk-card">
+            <i class="devicon-javascript-plain colored"></i
+            ><span>JavaScript</span>
+          </div>
+          <div class="sk-card">
+            <i class="devicon-python-plain colored"></i><span>Python</span>
+          </div>
+          <div class="sk-card">
+            <i class="devicon-mysql-plain colored"></i><span>MySQL</span>
+          </div>
+          <div class="sk-card">
+            <i class="devicon-github-original" style="color: #e6edf3"></i
+            ><span>GitHub</span>
+          </div>
+          <div class="sk-card">
+            <i class="devicon-vscode-plain colored"></i><span>VS Code</span>
+          </div>
+        </div>
+        <!-- Skill Progress Bars in Two Columns with Stagger Delays -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          <div
+            class="glass-panel stagger-child p-5 rounded-xl space-y-3 relative overflow-hidden hover:-translate-y-1 transition-transform"
+            style="transition-delay: 80ms"
+          >
+            <div
+              class="flex justify-between items-center text-sm font-semibold"
+            >
+              <span class="flex items-center gap-2 text-white">
+                <i class="devicon-html5-plain colored text-base"></i> HTML/ CSS
+              </span>
+              <span class="text-xs font-mono font-bold text-amber-400"
+                >85%</span
+              >
+            </div>
+            <div
+              class="w-full bg-slate-800/90 rounded-full h-2 overflow-hidden"
+            >
+              <div
+                class="skill-bar-fill bg-gradient-to-r from-brand-dark via-brand to-amber-400 h-2 rounded-full"
+                data-target="85%"
+              ></div>
+            </div>
+          </div>
+          <div
+            class="glass-panel stagger-child p-5 rounded-xl space-y-3 relative overflow-hidden hover:-translate-y-1 transition-transform"
+            style="transition-delay: 140ms"
+          >
+            <div
+              class="flex justify-between items-center text-sm font-semibold"
+            >
+              <span class="flex items-center gap-2 text-white">
+                <i class="devicon-javascript-plain colored text-base"></i>
+                JavaScript
+              </span>
+              <span class="text-xs font-mono font-bold text-amber-400"
+                >70%</span
+              >
+            </div>
+            <div
+              class="w-full bg-slate-800/90 rounded-full h-2 overflow-hidden"
+            >
+              <div
+                class="skill-bar-fill bg-gradient-to-r from-brand-dark via-brand to-amber-400 h-2 rounded-full"
+                data-target="70%"
+              ></div>
+            </div>
+          </div>
+          <div
+            class="glass-panel stagger-child p-5 rounded-xl space-y-3 relative overflow-hidden hover:-translate-y-1 transition-transform"
+            style="transition-delay: 200ms"
+          >
+            <div
+              class="flex justify-between items-center text-sm font-semibold"
+            >
+              <span class="flex items-center gap-2 text-white">
+                <i class="devicon-python-plain colored text-base"></i> Python
+              </span>
+              <span class="text-xs font-mono font-bold text-amber-400"
+                >75%</span
+              >
+            </div>
+            <div
+              class="w-full bg-slate-800/90 rounded-full h-2 overflow-hidden"
+            >
+              <div
+                class="skill-bar-fill bg-gradient-to-r from-brand-dark via-brand to-amber-400 h-2 rounded-full"
+                data-target="75%"
+              ></div>
+            </div>
+          </div>
+          <div
+            class="glass-panel stagger-child p-5 rounded-xl space-y-3 relative overflow-hidden hover:-translate-y-1 transition-transform"
+            style="transition-delay: 260ms"
+          >
+            <div
+              class="flex justify-between items-center text-sm font-semibold"
+            >
+              <span class="flex items-center gap-2 text-white">
+                <i class="devicon-mysql-plain colored text-base"></i> MySQL
+              </span>
+              <span class="text-xs font-mono font-bold text-amber-400"
+                >70%</span
+              >
+            </div>
+            <div
+              class="w-full bg-slate-800/90 rounded-full h-2 overflow-hidden"
+            >
+              <div
+                class="skill-bar-fill bg-gradient-to-r from-brand-dark via-brand to-amber-400 h-2 rounded-full"
+                data-target="70%"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ========================================================================= -->
+      <!-- 4. EDUCATION SECTION                                                      -->
+      <!-- ========================================================================= -->
+      <section class="space-y-10 reveal-item" id="education">
+        <div class="text-center max-w-xl mx-auto relative">
+          <h2
+            class="text-5xl sm:text-6xl md:text-7xl font-black uppercase text-white tracking-tighter"
+          >
+            <span class="kinetic-gradient-text">Education</span>
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <!-- Education Card 1 -->
+          <div
+            data-card="edu1"
+            class="glass-panel rounded-2xl overflow-hidden group flex flex-col transition-all duration-500 hover:-translate-y-2 hover:border-brand/40 relative"
+          >
+            <div class="p-6 md:p-8 flex-1 flex flex-col space-y-4">
+              <div
+                class="inline-flex items-center gap-2 px-3 py-1 w-fit rounded-md bg-brand/15 text-brand-light text-xs font-bold border border-brand/30"
+              >
+                Present
+              </div>
+              <div>
+                <h3 class="text-2xl font-extrabold text-white">B.C.A.</h3>
+                <p class="text-amber-400 text-sm font-semibold mt-1">
+                  Madras Christian College (MCC)
+                </p>
+              </div>
+              <p class="text-slate-400 text-sm leading-relaxed">
+                Currently pursuing my Bachelor of Computer Applications degree
+                in Chennai, focusing on modern software development practices
+                and fundamental computer science principles.
+              </p>
+            </div>
+          </div>
+
+          <!-- Education Card 2 -->
+          <div
+            data-card="edu2"
+            class="glass-panel rounded-2xl overflow-hidden group flex flex-col transition-all duration-500 hover:-translate-y-2 hover:border-brand/40 relative"
+          >
+            <div class="p-6 md:p-8 flex-1 flex flex-col space-y-4">
+              <div
+                class="inline-flex items-center gap-2 px-3 py-1 w-fit rounded-md bg-cyan-500/15 text-cyan-300 text-xs font-bold border border-cyan-500/30"
+              >
+                Completed 2026
+              </div>
+              <div>
+                <h3 class="text-2xl font-extrabold text-white">
+                  12th Board Exams
+                </h3>
+                <p class="text-amber-400 text-sm font-semibold mt-1">
+                  High School
+                </p>
+              </div>
+              <p class="text-slate-400 text-sm leading-relaxed">
+                Successfully completed my 12th board examinations, achieving a
+                final score of 445 out of 500.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ========================================================================= -->
+      <!-- 5. INTERNSHIPS SECTION                                                    -->
+      <!-- ========================================================================= -->
+      <section class="space-y-10 reveal-item" id="internships">
+        <div class="text-center max-w-xl mx-auto relative">
+          <h2
+            class="text-5xl sm:text-6xl md:text-7xl font-black uppercase text-white tracking-tighter"
+          >
+            <span class="kinetic-gradient-text">Internships</span>
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <!-- Internship Card 1 -->
+          <div
+            data-card="int1"
+            class="glass-panel rounded-2xl overflow-hidden group flex flex-col transition-all duration-500 hover:-translate-y-2 hover:border-brand/40 relative"
+          >
+            <div class="p-6 md:p-8 flex-1 flex flex-col space-y-4">
+              <div>
+                <h3
+                  class="text-2xl font-extrabold text-white group-hover:text-brand-light transition-colors"
+                >
+                  Junior Game Developer
+                </h3>
+                <div
+                  class="flex items-center justify-between border-b border-white/10 pb-4 mt-1"
+                >
+                  <p class="text-amber-400 text-sm font-semibold">
+                    St. Joseph's University
+                  </p>
+                  <span class="text-[11px] font-mono text-slate-500 uppercase"
+                    >BCA Dept</span
+                  >
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2 pt-1">
+                <span
+                  class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-brand/15 text-brand-light border border-brand/30"
+                  >Unity Studio</span
+                >
+                <span
+                  class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30"
+                  >Unity Marketplace</span
+                >
+              </div>
+
+              <p class="text-slate-400 text-sm leading-relaxed pt-2">
+                Worked within the Game Development department to design and
+                build interactive game mechanics using Unity Studio.
+                Successfully prototyped and deployed multiple fully playable
+                demo games, leveraging Unity Marketplace assets to accelerate
+                development.
+              </p>
+            </div>
+          </div>
+
+          <!-- Internship Card 2 -->
+          <div
+            data-card="int2"
+            class="glass-panel rounded-2xl overflow-hidden group flex flex-col transition-all duration-500 hover:-translate-y-2 hover:border-brand/40 relative"
+          >
+            <div class="p-6 md:p-8 flex-1 flex flex-col space-y-4">
+              <div>
+                <h3
+                  class="text-2xl font-extrabold text-white group-hover:text-brand-light transition-colors"
+                >
+                  Robotics &amp; Hardware Intern
+                </h3>
+                <div
+                  class="flex items-center justify-between border-b border-white/10 pb-4 mt-1"
+                >
+                  <p class="text-amber-400 text-sm font-semibold">
+                    St. Joseph's University
+                  </p>
+                  <span class="text-[11px] font-mono text-slate-500 uppercase"
+                    >EEE Dept</span
+                  >
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2 pt-1">
+                <span
+                  class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-amber-400/15 text-amber-400 border border-amber-400/30"
+                  >Robotics</span
+                >
+                <span
+                  class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-brand/15 text-brand-light border border-brand/30"
+                  >PC Hardware</span
+                >
+              </div>
+
+              <p class="text-slate-400 text-sm leading-relaxed pt-2">
+                Served as an intern within the EEE Department studying
+                foundational principles of PC hardware architecture.
+                Collaborated on core robotics concepts and gained practical,
+                hands-on knowledge in troubleshooting and diagnosing hardware
+                components.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ========================================================================= -->
+      <!-- 6. RECENT PROJECTS SECTION                                                -->
+      <!-- ========================================================================= -->
+      <section class="space-y-10 reveal-item" id="projects">
+        <div class="text-center max-w-xl mx-auto relative">
+          <h2
+            class="text-5xl sm:text-6xl md:text-7xl font-black text-white tracking-tight uppercase"
+          >
+            RECENT <span class="kinetic-gradient-text">PROJECTS</span>
+          </h2>
+        </div>
+        <!-- Project Cards Grid with clean screenshots -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Project 1: Internship Application Portal -->
+          <div
+            data-card="proj1"
+            class="glass-panel rounded-2xl overflow-hidden group flex flex-col transition-all duration-500 hover:-translate-y-3 hover:rotate-0 rotate-[-1deg] hover:shadow-2xl hover:border-brand/50 relative"
+          >
+            <div
+              class="relative overflow-hidden bg-slate-950 border-b border-white/[0.08]"
+            >
+              <!-- Fake browser chrome bar to frame the screenshot like a live app window -->
+              <div
+                class="px-3.5 py-2.5 bg-[#05080c] border-b border-white/[0.06] flex items-center gap-2"
+              >
+                <div class="flex items-center gap-1.5">
+                  <div class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-amber-400/80"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-brand/80"></div>
+                </div>
+                <div
+                  class="flex-1 mx-2 px-3 py-1 rounded-md bg-white/[0.04] border border-white/[0.06] text-[10px] font-mono text-slate-500 truncate"
+                >
+                  internship-portal.app
+                </div>
+              </div>
+              <div class="relative h-56 overflow-hidden">
+                <img
+                  alt="Internship Application Form Screenshot"
+                  class="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-110"
+                  src="Screenshots/project1.png"
+                />
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-[#0b1017] via-transparent to-transparent opacity-85"
+                ></div>
+                <!-- Tech category badge -->
+                <div
+                  class="absolute top-3 right-3 px-2.5 py-1 rounded bg-black/80 backdrop-blur-md border border-amber-400/40 text-[11px] font-mono text-amber-400 flex items-center gap-1.5"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  <span>Web UI</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
+              <div class="space-y-2.5">
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    class="px-2.5 py-0.5 text-[11px] font-medium rounded-md bg-brand/15 text-brand-light border border-brand/30"
+                    >HTML</span
+                  >
+                  <span
+                    class="px-2.5 py-0.5 text-[11px] font-medium rounded-md bg-brand/15 text-brand-light border border-brand/30"
+                    >CSS</span
+                  >
+                </div>
+                <h3
+                  class="text-xl font-extrabold text-white group-hover:text-amber-400 transition-colors"
+                >
+                  Internship Application Portal
+                </h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                  A simple web application used to collect student details in
+                  order to match them with internships based on their skill
+                  level. It also features an admin panel for modifying records
+                  or the application form itself.
+                </p>
+              </div>
+              <div
+                class="pt-3 flex items-center justify-between border-t border-white/[0.08]"
+              >
+                <span class="text-xs text-slate-500 font-mono"
+                  >Web Application</span
+                >
+                <a
+                  class="text-xs font-bold text-brand hover:text-amber-400 inline-flex items-center gap-1.5 transition-colors group/link"
+                  data-link="proj1"
+                  href="https://github.com/itz-me-jsj/Application-form"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <span>Click for more info</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                    ></path>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+          <!-- Project 2: Micro Center Admin Dashboard -->
+          <div
+            data-card="proj2"
+            class="glass-panel rounded-2xl overflow-hidden group flex flex-col transition-all duration-500 hover:-translate-y-3 hover:rotate-0 rotate-[1deg] hover:shadow-2xl hover:border-brand/50 relative"
+          >
+            <div
+              class="relative overflow-hidden bg-slate-950 border-b border-white/[0.08]"
+            >
+              <!-- Fake window title bar to frame the screenshot like a live desktop app -->
+              <div
+                class="px-3.5 py-2.5 bg-[#05080c] border-b border-white/[0.06] flex items-center gap-2"
+              >
+                <div class="flex items-center gap-1.5">
+                  <div class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-amber-400/80"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-brand/80"></div>
+                </div>
+                <div
+                  class="flex-1 mx-2 px-3 py-1 rounded-md bg-white/[0.04] border border-white/[0.06] text-[10px] font-mono text-slate-500 truncate"
+                >
+                  MicroCenter — Shop Manager.exe
+                </div>
+              </div>
+              <div class="relative h-56 overflow-hidden">
+                <img
+                  alt="Micro Center Admin Dashboard Screenshot"
+                  class="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-110"
+                  src="Screenshots/project2.png"
+                />
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-[#0b1017] via-transparent to-transparent opacity-85"
+                ></div>
+                <!-- Tech category badge -->
+                <div
+                  class="absolute top-3 right-3 px-2.5 py-1 rounded bg-black/80 backdrop-blur-md border border-brand/40 text-[11px] font-mono text-brand-light flex items-center gap-1.5"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-brand"></span>
+                  <span>Desktop &amp; DB</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
+              <div class="space-y-2.5">
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    class="px-2.5 py-0.5 text-[11px] font-medium rounded-md bg-brand/15 text-brand-light border border-brand/30"
+                    >Python</span
+                  >
+                  <span
+                    class="px-2.5 py-0.5 text-[11px] font-medium rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30"
+                    >CustomTkinter</span
+                  >
+                  <span
+                    class="px-2.5 py-0.5 text-[11px] font-medium rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                    >MySQL</span
+                  >
+                </div>
+                <h3
+                  class="text-xl font-extrabold text-white group-hover:text-amber-400 transition-colors"
+                >
+                  Micro Center — Shop Manager
+                </h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                  A desktop application used to manage computer repair/hardware
+                  shops. It handles live stock inventory, client orders, and
+                  repair tracking and more, all backed by MySQL.
+                </p>
+              </div>
+              <div
+                class="pt-3 flex items-center justify-between border-t border-white/[0.08]"
+              >
+                <span class="text-xs text-slate-500 font-mono"
+                  >Desktop &amp; Database System</span
+                >
+                <a
+                  class="text-xs font-bold text-brand hover:text-amber-400 inline-flex items-center gap-1.5 transition-colors group/link"
+                  data-link="proj2"
+                  href="https://github.com/itz-me-jsj/micro-center-inventory-manager"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <span>Click for more info</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                    ></path>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ========================================================================= -->
+      <!-- 7. RESUME SECTION                                                         -->
+      <!-- ========================================================================= -->
+      <section class="space-y-8 reveal-item" id="resume">
+        <div class="text-center max-w-xl mx-auto relative mb-10">
+          <h2
+            class="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight uppercase"
+          >
+            <span class="kinetic-gradient-text">Resume</span>
+          </h2>
+        </div>
+
+        <div class="max-w-2xl mx-auto space-y-6">
+          <div
+            class="glass-panel p-6 sm:p-8 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 hover:border-brand/30 transition-colors"
+          >
+            <div class="flex items-center gap-4">
+              <div
+                class="w-12 h-12 rounded-xl bg-brand/15 flex items-center justify-center text-brand border border-brand/20"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  ></path>
+                </svg>
+              </div>
+              <div class="text-left">
+                <h3 class="text-lg font-bold text-white">My Resume.pdf</h3>
+                <p class="text-xs text-slate-400">PDF Document</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Preview Button -->
+              <a
+                data-link="resume-preview"
+                href="Documents/my resume.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-secondary px-6 py-2.5 rounded-xl font-bold text-sm text-slate-200 inline-flex items-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                  ></path>
+                  <path
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                  ></path>
+                </svg>
+                Preview
+              </a>
+              <!-- Download Button -->
+              <a
+                data-link="resume-download"
+                href="Documents/my resume.pdf"
+                download="Resume.pdf"
+                class="btn-primary px-6 py-2.5 rounded-xl font-bold text-sm text-[#07080f] inline-flex items-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                  ></path>
+                </svg>
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ========================================================================= -->
+      <!-- 8. CONTACT SECTION                                                        -->
+      <!-- ========================================================================= -->
+      <section class="pb-14 reveal-item" id="contact">
+        <div
+          class="glass-panel contact-glow-pulse rounded-2xl p-6 md:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 border border-white/[0.1] bg-gradient-to-r from-[#0a0f16]/95 via-[#0d1520]/95 to-[#0a0f16]/95 relative overflow-hidden"
+        >
+          <div class="space-y-1 text-center lg:text-left z-10">
+            <div
+              class="flex items-center justify-center lg:justify-start gap-2"
+            >
+              <span
+                class="text-[11px] font-bold tracking-widest text-brand uppercase"
+                >LET'S CONNECT</span
+              >
+              <span class="font-script text-amber-400 text-lg"
+                >Always Open</span
+              >
+            </div>
+            <h2
+              class="text-xl md:text-2xl font-black text-white uppercase tracking-tight"
+            >
+              Have a project or looking for a developer?
+            </h2>
+            <p class="text-slate-400 text-xs md:text-sm">
+              I'm open to full-time roles, internships, and exciting
+              collaborations.
+            </p>
+          </div>
+          <div
+            class="w-full max-w-xs lg:max-w-none lg:w-[570px] lg:shrink-0 lg:mx-auto flex flex-col gap-4 z-10"
+          >
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- contact info -->
+              <div
+                class="bg-white/[0.02] border border-white/5 p-3 rounded-xl flex items-center gap-3"
+              >
+                <div
+                  class="p-2.5 shrink-0 rounded-lg bg-amber-400/10 text-amber-400"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    ></path>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <p
+                    class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5"
+                  >
+                    Location
+                  </p>
+                  <p class="text-xs text-slate-300 break-words">
+                    11-B Sanathi Street Kamachi Nagar Valasarabakkam Chennai-87
+                  </p>
+                </div>
+              </div>
+              <div
+                class="bg-white/[0.02] border border-white/5 p-3 rounded-xl flex items-center gap-3"
+              >
+                <div class="p-2.5 shrink-0 rounded-lg bg-brand/10 text-brand">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <p
+                    class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5"
+                  >
+                    Phone
+                  </p>
+                  <p class="text-xs font-mono text-slate-300">7200228537</p>
+                </div>
+              </div>
+            </div>
+            <!-- Action buttons -->
+            <div
+              class="flex flex-wrap md:flex-nowrap items-center justify-center gap-x-2 gap-y-2 md:gap-4"
+            >
+              <span
+                class="font-script text-amber-400 text-xl whitespace-nowrap w-full text-center md:w-auto"
+                >Let's build something →</span
+              >
+              <a
+                class="w-12 h-12 text-white flex items-center justify-center"
+                href="https://github.com/itz-me-jsj"
+                rel="noopener noreferrer"
+                target="_blank"
+                data-link="github"
+                title="GitHub"
+              >
+                <i class="devicon-github-original text-2xl"></i>
+              </a>
+              <a
+                class="w-12 h-12 text-white flex items-center justify-center"
+                href="https://www.linkedin.com/in/jeswin-samuel-jeyaraj-bb5346442"
+                rel="noopener noreferrer"
+                target="_blank"
+                data-link="linkedin"
+                title="LinkedIn"
+              >
+                <i class="devicon-linkedin-plain text-2xl"></i>
+              </a>
+              <a
+                class="w-12 h-12 text-white flex items-center justify-center"
+                href="https://twitter.com/jesw55674"
+                rel="noopener noreferrer"
+                target="_blank"
+                data-link="twitter"
+                title="Twitter"
+              >
+                <i class="devicon-twitter-original text-2xl"></i>
+              </a>
+              <a
+                class="w-12 h-12 text-white flex items-center justify-center"
+                href="https://instagram.com/jeswin_sjw"
+                rel="noopener noreferrer"
+                target="_blank"
+                data-link="instagram"
+                title="Instagram"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-6 h-6"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+                  ></path>
+                </svg>
+              </a>
+              <a
+                class="w-12 h-12 text-white flex items-center justify-center"
+                href="mailto:jeswinwilson29@gmail.com"
+                data-link="email"
+                title="Email"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-7 h-7"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  ></path>
+                </svg>
+              </a>
+              <span
+                class="font-script text-brand text-xl text-base whitespace-nowrap w-full text-center md:w-auto"
+                >Feel free to dm me</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- FOOTER -->
+    <footer
+      class="border-t border-white/[0.08] bg-[#050709] py-8 text-center text-xs text-slate-500 relative z-10"
+    >
+      <div
+        class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4"
+      >
+        <div class="flex items-center gap-2 font-mono">
+          <span class="text-brand font-bold">&lt;/&gt;</span>
+          <span class="text-slate-300 font-medium">Jeswin</span>
+          <span class="text-amber-400 font-script text-base ml-1"
+            >Tech forever</span
+          >
+        </div>
+        <p>© 2026 Jeswin. Made with love peace out.</p>
+      </div>
+    </footer>
+    <!-- Interactive Animations, Typewriter & Smooth Nav Handling -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const sections = Array.from(document.querySelectorAll("section[id]"));
+        const navItems = document.querySelectorAll(".nav-link");
+        const HEADER_OFFSET = 84;
+
+        // ---------------------------------------------------------------
+        // Active nav highlighting
+        // ---------------------------------------------------------------
+        function setActive(id) {
+          navItems.forEach((link) => {
+            link.classList.toggle(
+              "active-nav",
+              link.getAttribute("href") === "#" + id,
+            );
+          });
+          // keep the active link visible when the nav is scrollable (mobile)
+          const active = document.querySelector(".nav-link.active-nav");
+          if (active && active.scrollIntoView) {
+            active.scrollIntoView({
+              block: "nearest",
+              inline: "nearest",
+              behavior: "auto",
+            });
+          }
+        }
+
+        // When a nav/anchor link is clicked we remember which section the
+        // user asked for and stop the scroll listener from overriding it
+        // while the smooth-scroll animation runs. The lock is released as
+        // soon as the *user* takes over scrolling (wheel / touch / keys).
+        let clickedId = null;
+        const releaseLock = () => {
+          clickedId = null;
+        };
+        window.addEventListener("wheel", releaseLock, { passive: true });
+        window.addEventListener("touchmove", releaseLock, { passive: true });
+        // Scrollbar drag / middle-click scrolling: pointerdown happens before a link's click,
+        // so a nav click still sets the lock afterwards.
+        window.addEventListener("pointerdown", releaseLock, { passive: true });
+        // When a smooth scroll finishes, let normal highlighting take over again.
+        window.addEventListener("scrollend", () => {
+          clickedId = null;
+          updateActiveNav();
+        });
+        window.addEventListener("keydown", (e) => {
+          if (
+            [
+              "ArrowUp",
+              "ArrowDown",
+              "PageUp",
+              "PageDown",
+              "Home",
+              "End",
+              " ",
+            ].includes(e.key)
+          ) {
+            releaseLock();
+          }
+        });
+
+        function updateActiveNav() {
+          if (clickedId) return;
+
+          const scrollY = window.pageYOffset;
+          let currentId = sections[0].id;
+
+          // Last section whose top has passed the trigger line
+          sections.forEach((section) => {
+            const top = section.getBoundingClientRect().top + scrollY;
+            if (scrollY + 140 >= top) currentId = section.id;
+          });
+
+          // Bottom of the page: the Contact section is short, so its top can
+          // never reach the trigger line. Force the last section active.
+          const atBottom =
+            window.innerHeight + scrollY >=
+            document.documentElement.scrollHeight - 4;
+          if (atBottom) currentId = sections[sections.length - 1].id;
+
+          setActive(currentId);
+        }
+        window.addEventListener("scroll", updateActiveNav, { passive: true });
+        window.addEventListener("resize", updateActiveNav);
+        updateActiveNav();
+
+        // Smooth scroll handler with offset for fixed navbar
+        document
+          .querySelectorAll('header nav a, a[href^="#"]')
+          .forEach((link) => {
+            link.addEventListener("click", (e) => {
+              const targetId = link.getAttribute("href");
+              if (!targetId || !targetId.startsWith("#") || targetId === "#")
+                return;
+              const targetElement = document.querySelector(targetId);
+              if (!targetElement) return;
+
+              e.preventDefault();
+              const offsetPosition =
+                targetElement.getBoundingClientRect().top +
+                window.pageYOffset -
+                HEADER_OFFSET;
+
+              clickedId = targetId.slice(1);
+              setActive(clickedId);
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+                  .matches
+                  ? "auto"
+                  : "smooth",
+              });
+            });
+          });
+
+        // ---------------------------------------------------------------
+        // Typewriter
+        // ---------------------------------------------------------------
+        const phrases = [
+          "Python & MySQL Creator",
+          "Web Developer",
+          "UI Engineer",
+          "Full-Stack Enthusiast",
+        ];
+        let phraseIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const typewriterElement = document.getElementById("typewriter-text");
+        const typeSpeed = 90;
+        const deleteSpeed = 40;
+        const pauseEnd = 2000;
+
+        function typeEffect() {
+          if (!typewriterElement) return;
+          const currentPhrase = phrases[phraseIndex];
+
+          if (isDeleting) {
+            typewriterElement.textContent = currentPhrase.substring(
+              0,
+              charIndex - 1,
+            );
+            charIndex--;
+          } else {
+            typewriterElement.textContent = currentPhrase.substring(
+              0,
+              charIndex + 1,
+            );
+            charIndex++;
+          }
+
+          let delay = isDeleting ? deleteSpeed : typeSpeed;
+
+          if (!isDeleting && charIndex === currentPhrase.length) {
+            delay = pauseEnd;
+            isDeleting = true;
+          } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            delay = 320;
+          }
+
+          setTimeout(typeEffect, delay);
+        }
+        setTimeout(typeEffect, 400);
+
+        // ---------------------------------------------------------------
+        // Scroll reveal + skill bars
+        // ---------------------------------------------------------------
+        // Expose each bar's width as --target-width so the
+        // prefers-reduced-motion CSS rule has a real value to use.
+        document.querySelectorAll(".skill-bar-fill").forEach((bar) => {
+          bar.style.setProperty("--target-width", bar.dataset.target);
+        });
+
+        const revealElements = document.querySelectorAll(".reveal-item");
+        const revealObserver = new IntersectionObserver(
+          (entries, observer) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("revealed");
+                // entrance delays must not slow down hover later
+                setTimeout(() => {
+                  entry.target
+                    .querySelectorAll(".stagger-child")
+                    .forEach((c) => (c.style.transitionDelay = "0ms"));
+                }, 1200);
+
+                entry.target
+                  .querySelectorAll(".skill-bar-fill")
+                  .forEach((bar) => {
+                    const target = bar.getAttribute("data-target");
+                    if (target) bar.style.width = target;
+                  });
+
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          {
+            threshold: 0.12,
+            rootMargin: "0px 0px -40px 0px",
+          },
+        );
+
+        revealElements.forEach((el) => revealObserver.observe(el));
+      });
+    </script>
+  </body>
+</html>

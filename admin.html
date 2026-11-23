@@ -1,0 +1,3078 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      /* Stops VS Code Live Server's auto-reload socket so this panel never refreshes while you work */
+      (function () {
+        var N = window.WebSocket;
+        if (!N) return;
+        function W(url, p) {
+          if (/\/ws$/.test(String(url)))
+            return {
+              close: function () {},
+              send: function () {},
+              addEventListener: function () {},
+              removeEventListener: function () {},
+              readyState: 3,
+            };
+          return p ? new N(url, p) : new N(url);
+        }
+        W.prototype = N.prototype;
+        W.CONNECTING = 0;
+        W.OPEN = 1;
+        W.CLOSING = 2;
+        W.CLOSED = 3;
+        window.WebSocket = W;
+      })();
+    </script>
+    <title>Portfolio Admin Panel</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #07080f;
+        --bg2: #0b1017;
+        --bg3: #101824;
+        --border: rgba(255, 255, 255, 0.08);
+        --border-h: rgba(101, 184, 145, 0.4);
+        --brand: #65b891;
+        --brand-light: #98e2c6;
+        --gold: #f59e0b;
+        --text: #f1f5f9;
+        --text2: #94a3b8;
+        --text3: #64748b;
+        --danger: #ef4444;
+        --radius: 12px;
+      }
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+      input,
+      textarea,
+      select,
+      button {
+        font-family: inherit;
+      }
+      a {
+        color: var(--brand);
+        text-decoration: none;
+      }
+
+      /* ── LOGIN SCREEN ── */
+      .login-screen {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 1.5rem;
+      }
+      .login-box {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 400px;
+      }
+      .login-box h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+      }
+      .login-box .sub {
+        color: var(--text3);
+        font-size: 0.8rem;
+        margin-bottom: 1.5rem;
+      }
+
+      /* ── FORM ELEMENTS ── */
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      .form-group label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text3);
+        margin-bottom: 0.4rem;
+      }
+      .form-group input,
+      .form-group textarea,
+      .form-group select {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        color: var(--text);
+        font-size: 0.85rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .form-group input:focus,
+      .form-group textarea:focus {
+        border-color: var(--brand);
+      }
+      .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      input[type="color"] {
+        width: 48px !important;
+        height: 36px !important;
+        padding: 2px !important;
+        cursor: pointer;
+        border-radius: 6px !important;
+      }
+      .color-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .color-row input[type="text"] {
+        flex: 1;
+      }
+
+      /* ── BUTTONS ── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+      }
+      .btn-brand {
+        background: linear-gradient(135deg, #65b891, #46966f);
+        color: var(--bg);
+      }
+      .btn-brand:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px -3px rgba(101, 184, 145, 0.4);
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text2);
+      }
+      .btn-outline:hover {
+        border-color: var(--brand);
+        color: var(--text);
+      }
+      .btn-danger {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.25);
+      }
+      .btn-gold {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--gold);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+      .btn-gold:hover {
+        background: rgba(245, 158, 11, 0.25);
+      }
+      .btn-full {
+        width: 100%;
+      }
+
+      /* ── DASHBOARD LAYOUT ── */
+      .dashboard {
+        display: none;
+      }
+      .dashboard.active {
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 240px;
+        min-height: 100vh;
+        background: var(--bg2);
+        border-right: 1px solid var(--border);
+        padding: 1.5rem 1rem;
+        flex-shrink: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        overflow-y: auto;
+        z-index: 50;
+      }
+      .sidebar .logo {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-align: center;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+      }
+      .sidebar .logo span {
+        color: var(--brand);
+      }
+      .sidebar .logo-sub {
+        font-size: 0.65rem;
+        color: var(--text3);
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .sidebar .sep {
+        height: 1px;
+        background: var(--border);
+        margin: 0.75rem 0;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text2);
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-bottom: 2px;
+      }
+      .nav-item:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+      }
+      .nav-item.active {
+        background: rgba(101, 184, 145, 0.12);
+        color: var(--brand-light);
+      }
+      .nav-item svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+
+      .main-area {
+        flex: 1;
+        margin-left: 240px;
+        padding: 2.25rem 3rem;
+        min-width: 0;
+      }
+      .main-area h2 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+      }
+      .main-area .page-sub {
+        font-size: 0.8rem;
+        color: var(--text3);
+        margin-bottom: 1.5rem;
+      }
+
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+
+      /* ── CARDS ── */
+      .card {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: border-color 0.2s;
+      }
+      .card:hover {
+        border-color: var(--border-h);
+      }
+      .card-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--brand-light);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .card-title .badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(101, 184, 145, 0.15);
+        color: var(--brand);
+        font-weight: 600;
+      }
+
+      /* ── ACCOUNT TABLE ── */
+      .acc-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .acc-table th {
+        text-align: left;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text3);
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .acc-table td {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        color: var(--text2);
+      }
+      .acc-table td .mono {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+      }
+
+      /* ── STATUS BAR ── */
+      .status-bar {
+        position: fixed;
+        bottom: 0;
+        left: 240px;
+        right: 0;
+        background: var(--bg2);
+        border-top: 1px solid var(--border);
+        padding: 0.5rem 1.5rem;
+        font-size: 0.7rem;
+        color: var(--text3);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 40;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--brand);
+        display: inline-block;
+        margin-right: 0.4rem;
+      }
+      .status-dot.disconnected {
+        background: var(--danger);
+      }
+
+      /* ── TOAST ── */
+      .toast {
+        position: fixed;
+        bottom: 3.5rem;
+        right: 1.5rem;
+        background: var(--bg3);
+        border: 1px solid var(--brand);
+        color: var(--brand-light);
+        padding: 0.6rem 1.2rem;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 999;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .toast.error {
+        border-color: var(--danger);
+        color: #f87171;
+      }
+
+      /* ── TOGGLE SWITCH ── */
+      .toggle-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .toggle {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background: #1e293b;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .toggle.on {
+        background: var(--brand);
+      }
+      .toggle::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.2s;
+      }
+      .toggle.on::after {
+        transform: translateX(20px);
+      }
+
+      .actions-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 100%;
+          height: auto;
+          min-height: auto;
+          position: relative;
+        }
+        .main-area {
+          margin-left: 0;
+          padding: 1.5rem;
+        }
+        .status-bar {
+          left: 0;
+        }
+      }
+
+      /* ── BIGGER, FULL-WIDTH LAYOUT ── */
+      html {
+        font-size: 17px;
+      }
+      .main-area h2 {
+        font-size: 2.3rem;
+      }
+      .main-area .page-sub {
+        font-size: 0.95rem;
+        margin-bottom: 1.75rem;
+      }
+      .tab-content.active {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+        gap: 1.25rem;
+        align-items: start;
+      }
+      .tab-content > h2,
+      .tab-content > .page-sub,
+      .tab-content > .btn {
+        grid-column: 1 / -1;
+      }
+      .tab-content > .btn {
+        justify-self: start;
+        padding: 0.8rem 1.6rem;
+        font-size: 0.9rem;
+      }
+      .card {
+        margin-bottom: 0;
+        padding: 1.6rem;
+      }
+      .card-title {
+        font-size: 1.05rem;
+        margin-bottom: 1rem;
+      }
+      .form-group label {
+        font-size: 0.75rem;
+      }
+      .form-group input,
+      .form-group textarea {
+        font-size: 0.95rem;
+        padding: 0.75rem 0.9rem;
+      }
+      .form-group textarea {
+        overflow-y: auto;
+        line-height: 1.55;
+      }
+      .nav-item {
+        font-size: 0.9rem;
+        padding: 0.7rem 0.85rem;
+      }
+      .btn {
+        font-size: 0.85rem;
+      }
+      .acc-table td {
+        font-size: 0.9rem;
+      }
+
+      /* ── CUSTOM SCROLLBARS (page, sidebar, textareas) ── */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(101, 184, 145, 0.45) transparent;
+      }
+      *::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      *::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      *::-webkit-scrollbar-thumb {
+        background: rgba(101, 184, 145, 0.35);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      *::-webkit-scrollbar-thumb:hover {
+        background: rgba(101, 184, 145, 0.75);
+        background-clip: content-box;
+      }
+      *::-webkit-scrollbar-button {
+        display: none;
+        width: 0;
+        height: 0;
+      }
+      *::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+      textarea::-webkit-resizer {
+        display: none;
+      }
+      input[type="range"] {
+        padding: 0 !important;
+        accent-color: var(--brand);
+        height: 28px;
+      }
+      .gradprev {
+        font-size: 2.2rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-top: 0.5rem;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 100% auto;
+      }
+      .glowprev {
+        height: 56px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        margin-top: 0.75rem;
+        background: var(--bg);
+      }
+      .thumb {
+        width: 100%;
+        max-height: 240px;
+        object-fit: contain;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        margin-bottom: 0.9rem;
+      }
+      .cols {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+        gap: 1.25rem;
+        align-items: start;
+      }
+      .cols > .col {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+      .hint {
+        font-size: 0.8rem;
+        color: var(--gold);
+        margin-top: 0.75rem;
+      }
+      /* Save button inside a two-column layout (same look as the full-width ones) */
+      .cols > .col > .btn {
+        align-self: flex-start;
+        padding: 0.8rem 1.6rem;
+        font-size: 0.9rem;
+      }
+      .pdfprev {
+        display: block;
+        width: 100%;
+        height: 75vh;
+        min-height: 480px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+      }
+      .fontprev {
+        margin-top: 0.75rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════════ LOGIN SCREEN ═══════════════════ -->
+    <div id="loginScreen" class="login-screen">
+      <div class="login-box">
+        <div style="text-align: center; margin-bottom: 1.5rem">
+          <span
+            style="
+              font-family: &quot;JetBrains Mono&quot;, monospace;
+              font-size: 1.8rem;
+              font-weight: 700;
+              color: var(--brand);
+            "
+            >&lt;/&gt;</span
+          >
+        </div>
+        <h1 style="text-align: center">Admin Panel</h1>
+        <p class="sub" style="text-align: center">Portfolio Content Manager</p>
+        <div id="loginForm">
+          <div class="form-group">
+            <label>Username</label>
+            <input
+              type="text"
+              id="loginUser"
+              placeholder="Enter username"
+              autocomplete="off"
+            />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              id="loginPass"
+              placeholder="Enter password"
+            />
+          </div>
+          <p
+            id="loginError"
+            style="
+              color: #f87171;
+              font-size: 0.75rem;
+              margin-bottom: 0.75rem;
+              display: none;
+            "
+          ></p>
+          <button
+            class="btn btn-brand btn-full"
+            onclick="doLogin()"
+            style="margin-top: 0.5rem"
+          >
+            Sign In
+          </button>
+        </div>
+        <div id="firstSetup" style="display: none">
+          <p
+            style="
+              font-size: 0.8rem;
+              color: var(--text2);
+              margin-bottom: 1rem;
+              text-align: center;
+              line-height: 1.5;
+            "
+          >
+            No accounts found. Create your first admin account to get started.
+          </p>
+          <div class="form-group">
+            <label>New Username</label>
+            <input
+              type="text"
+              id="setupUser"
+              placeholder="Choose a username"
+              autocomplete="off"
+            />
+          </div>
+          <div class="form-group">
+            <label>New Password</label>
+            <input
+              type="password"
+              id="setupPass"
+              placeholder="Choose a password"
+            />
+          </div>
+          <button
+            class="btn btn-brand btn-full"
+            onclick="createFirstAccount()"
+            style="margin-top: 0.5rem"
+          >
+            Create Account & Enter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ DASHBOARD ═══════════════════ -->
+    <div id="dashboard" class="dashboard">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="logo">Admin Panel</div>
+        <div class="sep"></div>
+
+        <div class="nav-item active" onclick="switchTab('texts', this)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+          Edit Texts
+        </div>
+        <div class="nav-item" onclick="switchTab('theme', this)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+            />
+          </svg>
+          Theme & Colors
+        </div>
+        <div class="nav-item" onclick="switchTab('links', this)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+            />
+          </svg>
+          Social Links
+        </div>
+        <div class="nav-item" onclick="switchTab('image', this)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          Images
+        </div>
+        <div class="nav-item" onclick="switchTab('resume', this)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          Resume
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="nav-item" onclick="switchTab('accounts', this)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+            />
+          </svg>
+          Accounts
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="nav-item" onclick="logout()" style="color: #f87171">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
+          Log Out
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="main-area" style="padding-bottom: 4rem">
+        <!-- ── LINK FILE BANNER ── -->
+        <div
+          id="fileBanner"
+          class="card"
+          style="border-color: var(--gold); margin-bottom: 1.5rem"
+        >
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 0.75rem;
+            "
+          >
+            <div>
+              <p id="bannerTitle" style="font-weight: 700; font-size: 0.9rem">
+                📂 Link your portfolio folder
+              </p>
+              <p id="bannerSub" style="font-size: 0.75rem; color: var(--text3)">
+                Select the folder that contains portfolio.html — once. Uploaded
+                images and the resume are saved there too.
+              </p>
+            </div>
+            <button class="btn btn-gold" id="bannerBtn" onclick="linkFile()">
+              Select Folder
+            </button>
+          </div>
+        </div>
+
+        <div id="linkedInfo" style="display: none; margin-bottom: 1.5rem">
+          <div
+            class="card"
+            style="border-color: var(--brand); padding: 0.75rem 1.25rem"
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+              "
+            >
+              <p style="font-size: 0.8rem">
+                <span class="status-dot"></span>
+                <strong>portfolio.html</strong> linked —
+                <span style="color: var(--text3)" id="fileSize"></span>
+              </p>
+              <div class="actions-row" style="margin: 0">
+                <button
+                  class="btn btn-outline"
+                  onclick="reloadClick()"
+                  style="font-size: 0.7rem; padding: 0.35rem 0.75rem"
+                >
+                  ↻ Reload
+                </button>
+                <button
+                  class="btn btn-brand"
+                  onclick="saveToFile()"
+                  style="font-size: 0.7rem; padding: 0.35rem 0.75rem"
+                >
+                  💾 Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: TEXTS ═══ -->
+        <div id="tab-texts" class="tab-content active">
+          <h2>Edit Texts</h2>
+          <div class="card">
+            <div class="card-title">
+              Hero Section <span class="badge">Section 1</span>
+            </div>
+            <div class="form-group">
+              <label>Name (gradient text)</label
+              ><input type="text" id="t-hero-name" />
+            </div>
+            <div class="form-group">
+              <label>Headline</label><input type="text" id="t-hero-headline" />
+            </div>
+            <div class="form-group">
+              <label>Description paragraph</label
+              ><textarea id="t-hero-desc" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              About Section <span class="badge">Section 2</span>
+            </div>
+            <div class="form-group">
+              <label>About text (one paragraph)</label
+              ><textarea id="t-about" rows="8"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              Education Card 1 <span class="badge">Section 4</span>
+            </div>
+            <div class="form-group">
+              <label>Status Badge</label><input type="text" id="t-edu1-badge" />
+            </div>
+            <div class="form-group">
+              <label>Degree Title</label><input type="text" id="t-edu1-title" />
+            </div>
+            <div class="form-group">
+              <label>Institution</label><input type="text" id="t-edu1-inst" />
+            </div>
+            <div class="form-group">
+              <label>Description</label
+              ><textarea id="t-edu1-desc" rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Education Card 2</div>
+            <div class="form-group">
+              <label>Status Badge</label><input type="text" id="t-edu2-badge" />
+            </div>
+            <div class="form-group">
+              <label>Title</label><input type="text" id="t-edu2-title" />
+            </div>
+            <div class="form-group">
+              <label>Institution</label><input type="text" id="t-edu2-inst" />
+            </div>
+            <div class="form-group">
+              <label>Description</label
+              ><textarea id="t-edu2-desc" rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              Internship Card 1 <span class="badge">Section 5</span>
+            </div>
+            <div class="form-group">
+              <label>Job Title</label><input type="text" id="t-int1-title" />
+            </div>
+            <div class="form-group">
+              <label>University / Company</label
+              ><input type="text" id="t-int1-company" />
+            </div>
+            <div class="form-group">
+              <label>Department Label</label
+              ><input type="text" id="t-int1-dept" />
+            </div>
+            <div class="form-group">
+              <label>Description</label
+              ><textarea id="t-int1-desc" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Internship Card 2</div>
+            <div class="form-group">
+              <label>Job Title</label><input type="text" id="t-int2-title" />
+            </div>
+            <div class="form-group">
+              <label>University / Company</label
+              ><input type="text" id="t-int2-company" />
+            </div>
+            <div class="form-group">
+              <label>Department Label</label
+              ><input type="text" id="t-int2-dept" />
+            </div>
+            <div class="form-group">
+              <label>Description</label
+              ><textarea id="t-int2-desc" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              Project Card 1 <span class="badge">Section 6</span>
+            </div>
+            <div class="form-group">
+              <label>Project Title</label
+              ><input type="text" id="t-proj1-title" />
+            </div>
+            <div class="form-group">
+              <label>Description</label
+              ><textarea id="t-proj1-desc" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>GitHub Link</label><input type="text" id="t-proj1-link" />
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Project Card 2</div>
+            <div class="form-group">
+              <label>Project Title</label
+              ><input type="text" id="t-proj2-title" />
+            </div>
+            <div class="form-group">
+              <label>Description</label
+              ><textarea id="t-proj2-desc" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>GitHub Link</label><input type="text" id="t-proj2-link" />
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              Contact Section <span class="badge">Section 8</span>
+            </div>
+            <div class="form-group">
+              <label>Contact Heading</label
+              ><input type="text" id="t-contact-heading" />
+            </div>
+            <div class="form-group">
+              <label>Contact Subtitle</label
+              ><input type="text" id="t-contact-sub" />
+            </div>
+            <div class="form-group">
+              <label>Address</label
+              ><textarea id="t-contact-address" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label
+              ><input type="text" id="t-contact-phone" />
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Footer</div>
+            <div class="form-group">
+              <label>Footer Text</label><input type="text" id="t-footer" />
+            </div>
+          </div>
+
+          <button
+            class="btn btn-brand"
+            onclick="saveToFile()"
+            style="margin-top: 0.5rem"
+          >
+            💾 Save All Changes
+          </button>
+          <button
+            class="btn btn-outline"
+            onclick="restoreTextDefaults()"
+            style="margin-top: 0.5rem"
+          >
+            ↺ Restore texts to default
+          </button>
+        </div>
+
+        <!-- ═══ TAB: THEME ═══ -->
+        <div id="tab-theme" class="tab-content">
+          <h2>Theme & Colors</h2>
+          <div class="cols">
+            <div class="col">
+              <div class="card">
+                <div class="card-title">Brand Colors</div>
+                <div class="form-group">
+                  <label
+                    >Primary Brand (buttons, icons, highlights default
+                    #65b891)</label
+                  >
+                  <div class="color-row">
+                    <input type="color" id="c-brand" value="#65B891" />
+                    <input
+                      type="text"
+                      id="c-brand-hex"
+                      value="#65B891"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Brand Light (soft text, badges default #98e2c6 )</label
+                  >
+                  <div class="color-row">
+                    <input type="color" id="c-brand-light" value="#98e2c6" />
+                    <input
+                      type="text"
+                      id="c-brand-light-hex"
+                      value="#98e2c6"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Accent / Gold (labels, percentages, bar default
+                    #fbbf24)</label
+                  >
+                  <div class="color-row">
+                    <input type="color" id="c-gold" value="#fbbf24" />
+                    <input
+                      type="text"
+                      id="c-gold-hex"
+                      value="#fbbf24"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">
+                  Gradient Text (headings like “SKILLS &amp; TOOLS”)
+                </div>
+                <div class="form-group">
+                  <label>Edge color (start / end ( default #ffffff))</label>
+                  <div class="color-row">
+                    <input type="color" id="c-grad-edge" value="#ffffff" />
+                    <input
+                      type="text"
+                      id="c-grad-edge-hex"
+                      value="#ffffff"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Gradient color 1 (default #98e2c6)</label>
+                  <div class="color-row">
+                    <input type="color" id="c-grad-1" value="#98e2c6" />
+                    <input
+                      type="text"
+                      id="c-grad-1-hex"
+                      value="#98e2c6"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Gradient color 2 (default #65b891)</label>
+                  <div class="color-row">
+                    <input type="color" id="c-grad-2" value="#65B891" />
+                    <input
+                      type="text"
+                      id="c-grad-2-hex"
+                      value="#65B891"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+                <div class="gradprev" id="gradPreview">Skills &amp; Tools</div>
+              </div>
+            </div>
+            <div class="col">
+              <div class="card">
+                <div class="card-title">Glow Effects</div>
+                <div class="form-group">
+                  <label>Glow effects on the site</label>
+                  <div class="toggle-wrap">
+                    <div
+                      class="toggle on"
+                      id="glowToggle"
+                      onclick="setGlow(!glowOn)"
+                    ></div>
+                    <span
+                      id="glowToggleLabel"
+                      style="font-size: 0.85rem"
+                    ></span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Glow color (buttons, cards, nav underline, cursor, contact
+                    pulse default #65b891)</label
+                  >
+                  <div class="color-row">
+                    <input type="color" id="c-glow" value="#65B891" />
+                    <input
+                      type="text"
+                      id="c-glow-hex"
+                      value="#65B891"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+                <div class="glowprev" id="glowPreview"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">Site Background</div>
+                <div class="form-group">
+                  <label>Background color (default #07080f)</label>
+                  <div class="color-row">
+                    <input type="color" id="c-bg" value="#07080f" />
+                    <input
+                      type="text"
+                      id="c-bg-hex"
+                      value="#07080f"
+                      maxlength="7"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-title">Typography</div>
+                <div class="form-group">
+                  <label>Font style (default Plus jakarta sans)</label
+                  ><select id="f-family"></select>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Base font size: <span id="f-size-label">16</span>px (scales
+                    the whole site)</label
+                  >
+                  <input
+                    type="range"
+                    id="f-size"
+                    min="10"
+                    max="24"
+                    step="1"
+                    value="16"
+                  />
+                </div>
+                <div class="fontprev" id="fontPreview">
+                  The quick brown fox builds clean web apps.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="btn btn-brand"
+            onclick="saveToFile()"
+            style="margin-top: 0.5rem"
+          >
+            💾 Save Theme Changes
+          </button>
+          <button
+            class="btn btn-outline"
+            onclick="resetTheme()"
+            style="margin-top: 0.5rem"
+          >
+            ↺ Reset colors &amp; fonts to defaults
+          </button>
+        </div>
+
+        <!-- ═══ TAB: LINKS ═══ -->
+        <div id="tab-links" class="tab-content">
+          <h2>Social Links</h2>
+          <div class="card">
+            <div class="card-title">Platform Links</div>
+            <div class="form-group">
+              <label>GitHub</label
+              ><input
+                type="text"
+                id="l-github"
+                placeholder="https://github.com/..."
+              />
+            </div>
+            <div class="form-group">
+              <label>LinkedIn</label
+              ><input
+                type="text"
+                id="l-linkedin"
+                placeholder="https://linkedin.com/in/..."
+              />
+            </div>
+            <div class="form-group">
+              <label>Twitter</label
+              ><input
+                type="text"
+                id="l-twitter"
+                placeholder="https://twitter.com/..."
+              />
+            </div>
+            <div class="form-group">
+              <label>Instagram</label
+              ><input
+                type="text"
+                id="l-instagram"
+                placeholder="https://instagram.com/..."
+              />
+            </div>
+            <div class="form-group">
+              <label>Email Address</label
+              ><input type="text" id="l-email" placeholder="you@example.com" />
+            </div>
+          </div>
+
+          <button
+            class="btn btn-brand"
+            onclick="saveToFile()"
+            style="margin-top: 0.5rem"
+          >
+            💾 Save Links
+          </button>
+          <button
+            class="btn btn-outline"
+            onclick="restoreLinkDefaults()"
+            style="margin-top: 0.5rem"
+          >
+            ↺ Restore links to default
+          </button>
+        </div>
+
+        <!-- ═══ TAB: IMAGE ═══ -->
+        <div id="tab-image" class="tab-content">
+          <h2>Images</h2>
+          <div class="card">
+            <div class="card-title">Hero Image</div>
+            <img class="thumb" id="th-hero" alt="" style="display: none" />
+            <div class="form-group">
+              <label>Image file in your folder</label
+              ><input
+                type="text"
+                id="i-hero"
+                placeholder="Screenshots/me.png"
+              />
+            </div>
+            <input type="file" id="u-hero" accept="image/*" hidden />
+            <button
+              class="btn btn-outline"
+              onclick="document.getElementById('u-hero').click()"
+            >
+              ⬆ Upload new image
+            </button>
+            <p class="hint" id="h-hero"></p>
+            <div class="form-group" style="margin-top: 1rem">
+              <label
+                >Hero image size: <span id="hero-scale-label">100</span>% of the
+                original (hero image only)</label
+              >
+              <input
+                type="range"
+                id="hero-scale"
+                min="20"
+                max="200"
+                step="5"
+                value="100"
+              />
+            </div>
+            <button class="btn btn-outline" onclick="resetHeroScale()">
+              ↺ Reset size to 100%
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Project 1 Image</div>
+            <img class="thumb" id="th-proj1" alt="" style="display: none" />
+            <div class="form-group">
+              <label>Image file in your folder</label
+              ><input
+                type="text"
+                id="i-proj1"
+                placeholder="Screenshots/project1.png"
+              />
+            </div>
+            <input type="file" id="u-proj1" accept="image/*" hidden />
+            <button
+              class="btn btn-outline"
+              onclick="document.getElementById('u-proj1').click()"
+            >
+              ⬆ Upload new image
+            </button>
+            <p class="hint" id="h-proj1"></p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Project 2 Image</div>
+            <img class="thumb" id="th-proj2" alt="" style="display: none" />
+            <div class="form-group">
+              <label>Image file in your folder</label
+              ><input
+                type="text"
+                id="i-proj2"
+                placeholder="Screenshots/project2.png"
+              />
+            </div>
+            <input type="file" id="u-proj2" accept="image/*" hidden />
+            <button
+              class="btn btn-outline"
+              onclick="document.getElementById('u-proj2').click()"
+            >
+              ⬆ Upload new image
+            </button>
+            <p class="hint" id="h-proj2"></p>
+          </div>
+
+          <button
+            class="btn btn-brand"
+            onclick="saveToFile()"
+            style="margin-top: 0.5rem"
+          >
+            💾 Save Images
+          </button>
+        </div>
+
+        <!-- ═══ TAB: RESUME ═══ -->
+        <div id="tab-resume" class="tab-content">
+          <h2>Resume</h2>
+          <div class="cols">
+            <div class="col">
+              <div class="card">
+                <div class="card-title">Resume PDF</div>
+                <div class="form-group">
+                  <label>Current resume file</label
+                  ><input
+                    type="text"
+                    id="r-file"
+                    placeholder="Documents/my resume.pdf"
+                  />
+                </div>
+                <input
+                  type="file"
+                  id="u-resume"
+                  accept="application/pdf,.pdf"
+                  hidden
+                />
+                <button
+                  class="btn btn-outline"
+                  onclick="document.getElementById('u-resume').click()"
+                >
+                  ⬆ Upload new resume (PDF)
+                </button>
+                <p class="hint" id="h-resume"></p>
+              </div>
+              <button class="btn btn-brand" onclick="saveToFile()">
+                💾 Save Resume
+              </button>
+            </div>
+
+            <div class="col">
+              <div class="card">
+                <div class="card-title">
+                  Preview
+                  <span class="badge" id="resumeBadge">Current file</span>
+                </div>
+                <iframe
+                  id="resumeFrame"
+                  class="pdfprev"
+                  title="Resume preview"
+                  style="display: none"
+                ></iframe>
+                <p
+                  class="hint"
+                  id="resumeMsg"
+                  style="color: var(--text3); margin-top: 0"
+                >
+                  Link your portfolio folder to see your resume here.
+                </p>
+                <p class="hint" style="color: var(--text3)">
+                  Blank preview? Your browser may be set to download PDFs
+                  instead of showing them.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: ACCOUNTS ═══ -->
+        <div id="tab-accounts" class="tab-content">
+          <h2>Account Manager</h2>
+          <div class="card">
+            <div class="card-title">Login Setting</div>
+            <div class="toggle-wrap">
+              <div
+                class="toggle"
+                id="loginToggle"
+                onclick="toggleLogin()"
+              ></div>
+              <span style="font-size: 0.8rem" id="loginToggleLabel"
+                >Login disabled — anyone can access the admin panel</span
+              >
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Existing Accounts</div>
+            <div id="accountsTable"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Add New Account</div>
+            <div class="form-group">
+              <label>Username</label
+              ><input
+                type="text"
+                id="newAccUser"
+                placeholder="Username"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-group">
+              <label>Password</label
+              ><input type="password" id="newAccPass" placeholder="Password" />
+            </div>
+            <button class="btn btn-brand" onclick="addAccount()">
+              Add Account
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- /main-area -->
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span
+          ><span class="status-dot" id="statusDot"></span>
+          <span id="statusText">No file linked</span></span
+        >
+      </div>
+    </div>
+    <!-- /dashboard -->
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ═══════════════════════════════════════════════════════════
+      // STATE
+      // ═══════════════════════════════════════════════════════════
+      let dirHandle = null; // portfolio folder (File System Access API)
+      let fileHandle = null; // File System Access API handle
+      let htmlContent = ""; // Raw HTML string of portfolio.html
+      let doc = null; // Parsed DOMParser document
+      let loadedModified = 0;
+      let baseline = ""; // last known file content, used to skip no-op saves
+
+      const FONTS = [
+        {
+          name: "Plus Jakarta Sans",
+          stack: '"Plus Jakarta Sans", sans-serif',
+          spec: null,
+        },
+        {
+          name: "Inter",
+          stack: '"Inter", sans-serif',
+          spec: "Inter:wght@300;400;500;600;700;800;900",
+        },
+        {
+          name: "Poppins",
+          stack: '"Poppins", sans-serif',
+          spec: "Poppins:wght@300;400;500;600;700;800;900",
+        },
+        {
+          name: "Montserrat",
+          stack: '"Montserrat", sans-serif',
+          spec: "Montserrat:wght@300;400;500;600;700;800;900",
+        },
+        {
+          name: "DM Sans",
+          stack: '"DM Sans", sans-serif',
+          spec: "DM+Sans:wght@300;400;500;600;700;800;900",
+        },
+        {
+          name: "Outfit",
+          stack: '"Outfit", sans-serif',
+          spec: "Outfit:wght@300;400;500;600;700;800;900",
+        },
+        {
+          name: "Space Grotesk",
+          stack: '"Space Grotesk", sans-serif',
+          spec: "Space+Grotesk:wght@300;400;500;600;700",
+        },
+        {
+          name: "Roboto",
+          stack: '"Roboto", sans-serif',
+          spec: "Roboto:wght@300;400;500;700;900",
+        },
+        {
+          name: "Lora (serif)",
+          stack: '"Lora", serif',
+          spec: "Lora:wght@400;500;600;700",
+        },
+        {
+          name: "Playfair Display (serif)",
+          stack: '"Playfair Display", serif',
+          spec: "Playfair+Display:wght@400;500;600;700;800;900",
+        },
+        {
+          name: "JetBrains Mono (mono)",
+          stack: '"JetBrains Mono", monospace',
+          spec: null,
+        },
+      ];
+      (function buildFontSelect() {
+        const s = document.getElementById("f-family");
+        FONTS.forEach((f) => {
+          const o = document.createElement("option");
+          o.value = f.name;
+          o.textContent = f.name;
+          s.appendChild(o);
+        });
+      })();
+      // ── Uploaded images / resume (written into the portfolio folder on Save) ──
+      const pending = {};
+      const ASSETS = {
+        hero: {
+          prefix: "hero",
+          field: "i-hero",
+          input: "u-hero",
+          thumb: "th-hero",
+        },
+        proj1: {
+          prefix: "project1",
+          field: "i-proj1",
+          input: "u-proj1",
+          thumb: "th-proj1",
+        },
+        proj2: {
+          prefix: "project2",
+          field: "i-proj2",
+          input: "u-proj2",
+          thumb: "th-proj2",
+        },
+        resume: {
+          prefix: "resume",
+          field: "r-file",
+          input: "u-resume",
+          thumb: null,
+        },
+      };
+      const FALLBACK = {
+        hero: "Screenshots/me.png",
+        proj1: "Screenshots/project1.png",
+        proj2: "Screenshots/project2.png",
+        resume: "Documents/my resume.pdf",
+      };
+      Object.entries(ASSETS).forEach(([key, c]) => {
+        document.getElementById(c.input).addEventListener("change", (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          // Only accept the right kind of file for this slot
+          const wantPdf = key === "resume";
+          const okType = wantPdf
+            ? f.type === "application/pdf" || /\.pdf$/i.test(f.name)
+            : f.type.startsWith("image/");
+          if (!okType) {
+            toast(
+              wantPdf
+                ? "Please choose a PDF file"
+                : "Please choose an image file",
+              true,
+            );
+            e.target.value = "";
+            return;
+          }
+          if (!wantPdf) {
+            const ext = ((
+              document.getElementById(c.field).value.trim() || FALLBACK[key]
+            )
+              .split("?")[0]
+              .match(/\.([a-z0-9]+)$/i) || [])[1];
+            const MIME = {
+              png: "image/png",
+              jpg: "image/jpeg",
+              jpeg: "image/jpeg",
+              webp: "image/webp",
+              gif: "image/gif",
+            };
+            const want = MIME[(ext || "").toLowerCase()];
+            if (f.type === "image/svg+xml" || (want && f.type !== want)) {
+              toast(
+                "That file is " +
+                  (f.type || "an unknown type") +
+                  " but the slot is ." +
+                  ext +
+                  " — change the file name box to match (e.g. .jpg) or choose a ." +
+                  ext +
+                  " image",
+                true,
+              );
+              e.target.value = "";
+              return;
+            }
+          }
+          if (f.size > 25 * 1024 * 1024) {
+            toast(
+              "That file is over 25 MB — please choose a smaller one",
+              true,
+            );
+            e.target.value = "";
+            return;
+          }
+          pending[key] = f;
+          if (c.thumb) {
+            const t = document.getElementById(c.thumb);
+            if (t.dataset.url) URL.revokeObjectURL(t.dataset.url);
+            t.dataset.url = URL.createObjectURL(f);
+            t.src = t.dataset.url;
+            t.style.display = "block";
+          }
+          if (key === "resume") showResumePreview(f, true);
+          const path =
+            document.getElementById(c.field).value.trim() || FALLBACK[key];
+          document.getElementById("h-" + key).textContent =
+            "Will replace " +
+            path +
+            " when you press Save (same file name, no new file).";
+          e.target.value = "";
+        });
+      });
+      ["hero", "proj1", "proj2"].forEach((key) => {
+        document
+          .getElementById(ASSETS[key].field)
+          .addEventListener("change", (e) => {
+            if (!pending[key]) loadThumb(key, e.target.value.trim());
+          });
+      });
+      // Read a file (e.g. "me.png" or "img/me.png") from the linked folder
+      async function readFolderFile(src) {
+        if (!dirHandle || !src || /^(https?:)?\/\//i.test(src))
+          throw new Error("not in folder");
+        // Try the name as written, then URL-decoded ("my%20resume.pdf" -> "my resume.pdf")
+        const raw = src.split("?")[0];
+        let dec = raw;
+        try {
+          dec = decodeURIComponent(raw);
+        } catch (e) {}
+        let lastErr;
+        for (const p of dec === raw ? [raw] : [raw, dec]) {
+          try {
+            const parts = p.split("/").filter(Boolean);
+            let h = dirHandle;
+            for (let i = 0; i < parts.length - 1; i++)
+              h = await h.getDirectoryHandle(parts[i]);
+            return await (
+              await h.getFileHandle(parts[parts.length - 1])
+            ).getFile();
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        throw lastErr;
+      }
+
+      // ── Resume preview (Resume tab) ──
+      let resumeUrl = null,
+        resumeSeq = 0;
+      function showResumePreview(file, isNew, missingMsg) {
+        const fr = document.getElementById("resumeFrame"),
+          msg = document.getElementById("resumeMsg"),
+          badge = document.getElementById("resumeBadge");
+        if (resumeUrl) URL.revokeObjectURL(resumeUrl);
+        resumeUrl = null;
+        if (!file) {
+          fr.removeAttribute("src");
+          fr.style.display = "none";
+          msg.textContent =
+            missingMsg || "Link your portfolio folder to see your resume here.";
+          badge.textContent = "No file";
+          return;
+        }
+        resumeUrl = URL.createObjectURL(
+          new Blob([file], { type: "application/pdf" }),
+        );
+        fr.src = resumeUrl + "#view=FitH&navpanes=0";
+        fr.style.display = "block";
+        msg.textContent = isNew
+          ? "This is the NEW file you chose. It replaces the current resume when you press Save."
+          : "";
+        badge.textContent = isNew ? "New file (not saved yet)" : "Current file";
+      }
+      async function loadResumePreview(src) {
+        if (pending.resume) return; // a newly chosen file is already on show
+        const seq = ++resumeSeq;
+        try {
+          const f = await readFolderFile(src);
+          if (seq === resumeSeq && !pending.resume) showResumePreview(f, false);
+        } catch (e) {
+          if (seq === resumeSeq && !pending.resume)
+            showResumePreview(
+              null,
+              false,
+              src
+                ? "No file named “" +
+                    src +
+                    "” was found in your folder. Upload a PDF to see it here."
+                : "No resume file is linked yet. Upload a PDF to see it here.",
+            );
+        }
+      }
+      document.getElementById("r-file").addEventListener("change", () => {
+        loadResumePreview(document.getElementById("r-file").value.trim());
+      });
+
+      async function loadThumb(key, src) {
+        if (key === "resume") return loadResumePreview(src);
+        const c = ASSETS[key];
+        if (!c || !c.thumb) return;
+        const t = document.getElementById(c.thumb);
+        try {
+          const f = await readFolderFile(src);
+          if (t.dataset.url) URL.revokeObjectURL(t.dataset.url); // don't leak old previews
+          t.dataset.url = URL.createObjectURL(f);
+          t.src = t.dataset.url;
+          t.style.display = "block";
+        } catch (e) {
+          t.style.display = "none";
+        }
+      }
+      async function writeAsset(path, file) {
+        const parts = path.split("/").filter(Boolean);
+        let h = dirHandle;
+        for (let k = 0; k < parts.length - 1; k++)
+          h = await h.getDirectoryHandle(parts[k], { create: true });
+        const w = await (
+          await h.getFileHandle(parts[parts.length - 1], { create: true })
+        ).createWritable();
+        await w.write(file);
+        await w.close();
+      }
+      // Which file an upload will overwrite (same name as already linked)
+      function assetPath(key) {
+        const c = ASSETS[key];
+        const fld = document.getElementById(c.field);
+        let path = fld.value.trim().split("?")[0];
+        if (!path || /^(https?:)?\/\//i.test(path)) path = FALLBACK[key];
+        // "my%20resume.pdf" -> "my resume.pdf" so the upload overwrites the real file
+        try {
+          path = decodeURIComponent(path);
+        } catch (e) {}
+        fld.value = path;
+        return path;
+      }
+      // Overwrites the files that are already linked (same name) — never creates a new file name.
+      // All pending files are written in parallel.
+      async function commitAssets() {
+        const keys = Object.keys(pending);
+        if (!keys.length) return 0;
+        if (!dirHandle) throw new Error("Link your portfolio folder first");
+        await Promise.all(
+          keys.map(async (key) => {
+            const path = assetPath(key);
+            await writeAsset(path, pending[key]);
+            delete pending[key];
+            document.getElementById("h-" + key).textContent = "";
+            loadThumb(key, path);
+          }),
+        );
+        return keys.length;
+      }
+      function notifyMain() {
+        try {
+          const bc = new BroadcastChannel("portfolio-admin");
+          bc.postMessage("saved");
+          setTimeout(() => bc.close(), 1000);
+        } catch (e) {}
+      }
+      const BLANK = "about:blank";
+      const LEGACY = {
+        github: '#contact a[href*="github"]',
+        linkedin: '#contact a[href*="linkedin"]',
+        twitter: '#contact a[href*="twitter"]',
+        instagram: '#contact a[href*="instagram"]',
+        email: '#contact a[href^="mailto"]',
+        proj1: '#projects a[href*="Application-form"]',
+        proj2: '#projects a[href*="micro-center"]',
+        "resume-preview": "#resume a[href]:not([download])",
+        "resume-download": "#resume a[download]",
+      };
+      function findLink(key) {
+        if (!doc) return null;
+        let el = doc.querySelector('[data-link="' + key + '"]');
+        if (!el && LEGACY[key]) {
+          el = doc.querySelector(LEGACY[key]);
+          if (el) el.setAttribute("data-link", key);
+        }
+        return el;
+      }
+      function getLinkVal(el) {
+        const h = el.getAttribute("href") || "";
+        return h === BLANK ? "" : h;
+      }
+      function normUrl(v) {
+        v = (v || "").trim();
+        if (!v) return "";
+        return /^(https?:|mailto:|tel:|about:|#|\/|\.)/i.test(v)
+          ? v
+          : "https://" + v;
+      }
+      // empty value -> the link opens a blank page; filled value -> real link
+      function setLinkEl(el, value, opts) {
+        opts = opts || {};
+        if (!value) {
+          el.setAttribute("href", BLANK);
+          if (!el.hasAttribute("target")) {
+            el.setAttribute("target", "_blank");
+            el.setAttribute("data-blank-target", "1");
+          }
+          if (!el.hasAttribute("rel"))
+            el.setAttribute("rel", "noopener noreferrer");
+          if (opts.download) el.removeAttribute("download");
+        } else {
+          el.setAttribute("href", value);
+          if (el.hasAttribute("data-blank-target")) {
+            el.removeAttribute("target");
+            el.removeAttribute("data-blank-target");
+          }
+          if (opts.download) el.setAttribute("download", "Resume.pdf");
+        }
+      }
+      function serialize() {
+        return "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+      }
+      function hexVal(id) {
+        let v = document.getElementById(id).value.trim();
+        if (/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(v)) v = "#" + v; // allow a missing #
+        if (/^#[0-9a-fA-F]{3}$/.test(v))
+          v =
+            "#" +
+            v
+              .slice(1)
+              .split("")
+              .map((c) => c + c)
+              .join("");
+        return /^#[0-9a-fA-F]{6}$/.test(v) ? v : null;
+      }
+      function hexToRgbStr(h) {
+        const n = parseInt(h.slice(1), 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(", ");
+      }
+      const THEME_DEFAULTS = {
+        brand: "#65B891",
+        "brand-light": "#98e2c6",
+        gold: "#fbbf24",
+        glow: "#65B891",
+        "grad-edge": "#ffffff",
+        "grad-1": "#98e2c6",
+        "grad-2": "#65B891",
+        bg: "#07080f",
+      };
+      function resetTheme() {
+        Object.entries(THEME_DEFAULTS).forEach(([k, v]) => {
+          document.getElementById("c-" + k).value = v;
+          document.getElementById("c-" + k + "-hex").value = v;
+        });
+        document.getElementById("f-family").value = "Plus Jakarta Sans";
+        document.getElementById("f-size").value = 16;
+        setGlow(true);
+        toast("Defaults loaded — press Save to apply");
+      }
+      let glowOn = true;
+      // Hero image size (percent, 20–200). Only affects the hero image.
+      function heroScale() {
+        const n = parseInt(document.getElementById("hero-scale").value, 10);
+        return Math.min(200, Math.max(20, isNaN(n) ? 100 : n));
+      }
+      function updateHeroScale() {
+        const s = heroScale();
+        document.getElementById("hero-scale-label").textContent = s;
+        // Preview scales in BOTH directions (height drives it; width follows via object-fit)
+        const t = document.getElementById("th-hero");
+        t.style.width = "100%";
+        t.style.maxHeight = "none";
+        t.style.height = (240 * s) / 100 + "px";
+      }
+      function resetHeroScale() {
+        document.getElementById("hero-scale").value = 100;
+        updateHeroScale();
+      }
+      document.addEventListener("input", (e) => {
+        if (e.target && e.target.id === "hero-scale") updateHeroScale();
+      });
+      function setGlow(v) {
+        glowOn = v;
+        document.getElementById("glowToggle").classList.toggle("on", v);
+        document.getElementById("glowToggleLabel").textContent = v
+          ? "On — buttons, cards and headings glow"
+          : "Off — no glow or shadow effects anywhere";
+        updatePreviews();
+      }
+      function updatePreviews() {
+        const e = hexVal("c-grad-edge-hex") || "#ffffff",
+          c1 = hexVal("c-grad-1-hex") || "#98e2c6",
+          c2 = hexVal("c-grad-2-hex") || "#65B891";
+        document.getElementById("gradPreview").style.backgroundImage =
+          `linear-gradient(90deg, ${e} 0%, ${c1} 30%, ${c2} 60%, ${e} 100%)`;
+        const g = hexVal("c-glow-hex") || "#65B891";
+        document.getElementById("glowPreview").style.boxShadow = glowOn
+          ? `0 0 28px 4px ${g}99`
+          : "none";
+        document.getElementById("glowPreview").style.borderColor = g + "88";
+        const f =
+          FONTS.find(
+            (x) => x.name === document.getElementById("f-family").value,
+          ) || FONTS[0];
+        if (
+          f.spec &&
+          !document.getElementById("pf-" + f.name.replace(/\W/g, ""))
+        ) {
+          const l = document.createElement("link");
+          l.id = "pf-" + f.name.replace(/\W/g, "");
+          l.rel = "stylesheet";
+          l.href =
+            "https://fonts.googleapis.com/css2?family=" +
+            f.spec +
+            "&display=swap";
+          document.head.appendChild(l);
+        }
+        const size = document.getElementById("f-size").value;
+        document.getElementById("f-size-label").textContent = size;
+        const fp = document.getElementById("fontPreview");
+        fp.style.fontFamily = f.stack;
+        fp.style.fontSize = size + "px";
+      }
+      document.addEventListener("input", (e) => {
+        if (e.target.closest && e.target.closest("#tab-theme"))
+          updatePreviews();
+      });
+      document
+        .getElementById("f-family")
+        .addEventListener("change", updatePreviews);
+
+      // ── Remember the linked file (IndexedDB) so it never has to be re-picked ──
+      function idb() {
+        return new Promise((res, rej) => {
+          const r = indexedDB.open("portfolio_admin_db", 1);
+          r.onupgradeneeded = () => r.result.createObjectStore("handles");
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+      }
+      async function idbSet(k, v) {
+        const db = await idb();
+        return new Promise((res, rej) => {
+          const tx = db.transaction("handles", "readwrite");
+          tx.objectStore("handles").put(v, k);
+          tx.oncomplete = res;
+          tx.onerror = () => rej(tx.error);
+        });
+      }
+      async function idbGet(k) {
+        const db = await idb();
+        return new Promise((res, rej) => {
+          const rq = db.transaction("handles").objectStore("handles").get(k);
+          rq.onsuccess = () => res(rq.result);
+          rq.onerror = () => rej(rq.error);
+        });
+      }
+
+      async function openPortfolioFile() {
+        fileHandle = await dirHandle.getFileHandle("portfolio.html");
+      }
+
+      async function restoreFile() {
+        try {
+          const h = await idbGet("folder");
+          if (!h) return;
+          dirHandle = h;
+          const perm = await h.queryPermission({ mode: "readwrite" });
+          if (perm === "granted") {
+            await openPortfolioFile();
+            await loadFromFile(true);
+          } else {
+            // Browsers need one click to re-grant access after a restart
+            document.getElementById("bannerTitle").textContent =
+              "🔒 Reconnect your portfolio folder";
+            document.getElementById("bannerSub").textContent =
+              "Your folder is remembered — just click once to allow access again.";
+            const b = document.getElementById("bannerBtn");
+            b.textContent = "Reconnect";
+            b.onclick = reconnectFile;
+          }
+        } catch (e) {
+          console.warn("restoreFile failed", e);
+        }
+      }
+
+      async function reconnectFile() {
+        try {
+          const perm = await dirHandle.requestPermission({ mode: "readwrite" });
+          if (perm === "granted") {
+            await openPortfolioFile();
+            await loadFromFile();
+          } else toast("Permission denied", true);
+        } catch (e) {
+          toast("Could not reconnect: " + e.message, true);
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // UTILITIES
+      // ═══════════════════════════════════════════════════════════
+      function toast(msg, isError = false) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast show" + (isError ? " error" : "");
+        clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => (t.className = "toast"), 2500);
+      }
+
+      function getAccounts() {
+        return JSON.parse(
+          localStorage.getItem("portfolio_admin_accounts") || "[]",
+        );
+      }
+      function saveAccounts(arr) {
+        localStorage.setItem("portfolio_admin_accounts", JSON.stringify(arr));
+      }
+      function isLoginEnabled() {
+        return localStorage.getItem("portfolio_admin_login_enabled") === "true";
+      }
+      function setLoginEnabled(v) {
+        localStorage.setItem(
+          "portfolio_admin_login_enabled",
+          v ? "true" : "false",
+        );
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // LOGIN SYSTEM
+      // ═══════════════════════════════════════════════════════════
+      function initLoginScreen() {
+        const accs = getAccounts();
+        const sessionActive =
+          localStorage.getItem("portfolio_admin_session") === "true";
+        if (accs.length === 0) {
+          // No accounts exist => show first-time setup
+          document.getElementById("loginForm").style.display = "none";
+          document.getElementById("firstSetup").style.display = "block";
+        } else if (!isLoginEnabled() || sessionActive) {
+          // Login is disabled => go straight to dashboard
+          enterDashboard();
+        } else {
+          document.getElementById("loginForm").style.display = "block";
+          document.getElementById("firstSetup").style.display = "none";
+        }
+      }
+
+      function createFirstAccount() {
+        const u = document.getElementById("setupUser").value.trim();
+        const p = document.getElementById("setupPass").value;
+        if (!u || !p) {
+          toast("Please fill in both fields", true);
+          return;
+        }
+        saveAccounts([{ username: u, password: p }]);
+        setLoginEnabled(true);
+        enterDashboard();
+      }
+
+      function doLogin() {
+        const u = document.getElementById("loginUser").value.trim();
+        const p = document.getElementById("loginPass").value;
+        const accs = getAccounts();
+        const match = accs.find((a) => a.username === u && a.password === p);
+        if (match) {
+          enterDashboard();
+        } else {
+          const err = document.getElementById("loginError");
+          err.textContent = "Invalid username or password.";
+          err.style.display = "block";
+        }
+      }
+
+      function enterDashboard() {
+        localStorage.setItem("portfolio_admin_session", "true");
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("dashboard").classList.add("active");
+        renderAccountsTab();
+        const t = localStorage.getItem("portfolio_admin_tab");
+        if (t && document.getElementById("tab-" + t)) {
+          const n = [...document.querySelectorAll(".nav-item")].find((x) =>
+            (x.getAttribute("onclick") || "").includes("'" + t + "'"),
+          );
+          switchTab(t, n);
+        }
+        restoreFile();
+      }
+
+      function logout() {
+        localStorage.removeItem("portfolio_admin_session");
+        document.getElementById("dashboard").classList.remove("active");
+        document.getElementById("loginScreen").style.display = "flex";
+        document.getElementById("loginUser").value = "";
+        document.getElementById("loginPass").value = "";
+        document.getElementById("loginError").style.display = "none";
+        initLoginScreen();
+      }
+
+      // Handle Enter key on login fields
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          if (
+            document.getElementById("loginForm").style.display !== "none" &&
+            document.getElementById("loginScreen").style.display !== "none"
+          ) {
+            doLogin();
+          }
+        }
+      });
+
+      // ═══════════════════════════════════════════════════════════
+      // TAB SWITCHING
+      // ═══════════════════════════════════════════════════════════
+      function switchTab(tabId, navEl) {
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((t) => t.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((n) => n.classList.remove("active"));
+        document.getElementById("tab-" + tabId).classList.add("active");
+        if (navEl) navEl.classList.add("active");
+        localStorage.setItem("portfolio_admin_tab", tabId);
+        autosizeAll();
+      }
+
+      function autosize(el) {
+        if (el.offsetParent === null) return;
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + 2 + "px";
+      }
+      function autosizeAll() {
+        document.querySelectorAll("textarea").forEach(autosize);
+      }
+      document.addEventListener("input", (e) => {
+        if (e.target.tagName === "TEXTAREA") autosize(e.target);
+      });
+
+      // ═══════════════════════════════════════════════════════════
+      // FILE SYSTEM ACCESS API
+      // ═══════════════════════════════════════════════════════════
+      async function linkFile() {
+        try {
+          dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+          try {
+            await openPortfolioFile();
+          } catch (e) {
+            dirHandle = null;
+            toast("portfolio.html was not found in that folder", true);
+            return;
+          }
+          await idbSet("folder", dirHandle);
+          await loadFromFile();
+        } catch (e) {
+          if (e.name !== "AbortError")
+            toast("Error selecting folder: " + e.message, true);
+        }
+      }
+
+      async function loadFromFile(silent) {
+        if (!fileHandle) return;
+        try {
+          const file = await fileHandle.getFile();
+          htmlContent = await file.text();
+          loadedModified = file.lastModified;
+          doc = new DOMParser().parseFromString(htmlContent, "text/html");
+
+          document.getElementById("fileBanner").style.display = "none";
+          document.getElementById("linkedInfo").style.display = "block";
+          document.getElementById("fileSize").textContent =
+            (file.size / 1024).toFixed(1) + " KB";
+          document.getElementById("statusDot").classList.remove("disconnected");
+          document.getElementById("statusText").textContent =
+            "portfolio.html linked (" + (file.size / 1024).toFixed(1) + " KB)";
+
+          populateFields();
+          applyFieldsToDoc();
+          baseline = serialize();
+          if (!silent) toast("✓ File loaded successfully!");
+        } catch (e) {
+          toast("Error reading file: " + e.message, true);
+        }
+      }
+
+      // Reload button: ask first if that would throw away unsaved edits / queued uploads
+      function reloadClick() {
+        if (!fileHandle || !doc) return loadFromFile();
+        applyFieldsToDoc();
+        const dirty =
+          serialize() !== baseline || Object.keys(pending).length > 0;
+        if (
+          dirty &&
+          !confirm(
+            "Reload portfolio.html and discard your unsaved changes (including queued uploads)?",
+          )
+        )
+          return;
+        Object.keys(pending).forEach((k) => {
+          delete pending[k];
+          document.getElementById("h-" + k).textContent = "";
+        });
+        loadFromFile();
+      }
+
+      let saving = false;
+      async function saveToFile() {
+        if (!fileHandle || !doc) {
+          toast("Link a file first!", true);
+          return;
+        }
+        if (saving) return; // ignore double-clicks / repeated Ctrl+S
+        saving = true;
+
+        try {
+          // Refuse to save a colour box that isn't a valid hex (instead of silently using the default)
+          const badColor = [
+            "brand",
+            "brand-light",
+            "gold",
+            "glow",
+            "grad-edge",
+            "grad-1",
+            "grad-2",
+            "bg",
+          ].find((n) => !hexVal("c-" + n + "-hex"));
+          if (badColor) {
+            toast(
+              "Invalid colour in the Theme tab (use a hex like #65b891) — nothing was saved",
+              true,
+            );
+            return;
+          }
+
+          // Work out the final image/resume paths first so they go into the HTML
+          Object.keys(pending).forEach(assetPath);
+          applyFieldsToDoc();
+
+          const output = serialize();
+          const htmlChanged = output !== baseline;
+          const hasAssets = Object.keys(pending).length > 0;
+          if (!htmlChanged && !hasAssets) {
+            toast("No changes to save");
+            return;
+          }
+
+          // Safety: don't silently overwrite edits made to portfolio.html in VS Code since it was loaded.
+          // Asked BEFORE anything is written, so cancelling changes nothing.
+          if (htmlChanged) {
+            const cur = await fileHandle.getFile();
+            if (
+              loadedModified &&
+              cur.lastModified !== loadedModified &&
+              !confirm(
+                "portfolio.html was changed outside the admin panel since you loaded it.\n\nOverwrite those changes with the admin version?",
+              )
+            )
+              return;
+          }
+
+          // Write the HTML and any uploaded files at the same time
+          await Promise.all([
+            commitAssets(),
+            htmlChanged
+              ? (async () => {
+                  const w = await fileHandle.createWritable();
+                  await w.write(output);
+                  await w.close();
+                })()
+              : null,
+          ]);
+
+          if (htmlChanged) {
+            baseline = output;
+            loadedModified = (await fileHandle.getFile()).lastModified;
+          }
+          notifyMain();
+          toast(
+            htmlChanged
+              ? "✓ Changes saved to portfolio.html!"
+              : "✓ Files saved",
+          );
+        } catch (e) {
+          toast("Error saving: " + e.message, true);
+        } finally {
+          saving = false;
+        }
+      }
+
+      // Ctrl+S / Cmd+S saves from anywhere in the panel
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          if (document.getElementById("dashboard").classList.contains("active"))
+            saveToFile();
+        }
+      });
+
+      // ═══════════════════════════════════════════════════════════
+      // POPULATE FORM FIELDS FROM PARSED HTML
+      // ═══════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════
+      // CARD MAP — which form field maps to which element inside each card.
+      // Cards are found by their data-card attribute (falls back to order).
+      // ═══════════════════════════════════════════════════════════
+      const AMBER = ".text-amber-400",
+        DESC = "p.text-slate-400",
+        DEPT = '[class*="font-mono"][class*="text-slate-500"]';
+      const CARD_MAP = [
+        {
+          sec: "education",
+          key: "edu1",
+          i: 0,
+          f: {
+            "t-edu1-badge": '[class*="rounded-md"]',
+            "t-edu1-title": "h3",
+            "t-edu1-inst": AMBER,
+            "t-edu1-desc": DESC,
+          },
+        },
+        {
+          sec: "education",
+          key: "edu2",
+          i: 1,
+          f: {
+            "t-edu2-badge": '[class*="rounded-md"]',
+            "t-edu2-title": "h3",
+            "t-edu2-inst": AMBER,
+            "t-edu2-desc": DESC,
+          },
+        },
+        {
+          sec: "internships",
+          key: "int1",
+          i: 0,
+          f: {
+            "t-int1-title": "h3",
+            "t-int1-company": AMBER,
+            "t-int1-dept": DEPT,
+            "t-int1-desc": DESC,
+          },
+        },
+        {
+          sec: "internships",
+          key: "int2",
+          i: 1,
+          f: {
+            "t-int2-title": "h3",
+            "t-int2-company": AMBER,
+            "t-int2-dept": DEPT,
+            "t-int2-desc": DESC,
+          },
+        },
+        {
+          sec: "projects",
+          key: "proj1",
+          i: 0,
+          f: { "t-proj1-title": "h3", "t-proj1-desc": DESC },
+          link: ["proj1", "t-proj1-link"],
+        },
+        {
+          sec: "projects",
+          key: "proj2",
+          i: 1,
+          f: { "t-proj2-title": "h3", "t-proj2-desc": DESC },
+          link: ["proj2", "t-proj2-link"],
+        },
+      ];
+      function cardEl(c) {
+        const root = doc && doc.getElementById(c.sec);
+        if (!root) return null;
+        return (
+          root.querySelector('[data-card="' + c.key + '"]') ||
+          root.querySelectorAll(".glass-panel")[c.i] ||
+          null
+        );
+      }
+      function cardImg(key) {
+        const c = CARD_MAP.find((x) => x.key === key);
+        const card = c && cardEl(c);
+        return card ? card.querySelector("img") : null;
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // RESTORE DEFAULTS (Edit Texts + Social Links)
+      // Snapshot of the original site content. Restoring only fills the
+      // form — nothing is written to portfolio.html until you press Save.
+      // ═══════════════════════════════════════════════════════════
+      const DEFAULT_TEXTS = {
+        "t-hero-name": "Jeswin",
+        "t-hero-headline": "I like to build stuff.",
+        "t-hero-desc":
+          "I'm just a simple guy who loves computers, tech and to code all day, building things like clean and simple web apps and desktop applications along with database backend systems.",
+        "t-about":
+          "Yo I'm Jeswin, a programmer who's super into tech. Ever since I was a kid I've loved computers and software, which sparked my drive to design and create my own tools. A lot of what I build is fueled by watching tech creators and others in the space make their own products. It gives me that itch to go build something, experiment, and try something new even if it fails. I am a simple guy who loves tech, PC building, coding and anime. In my 12th I have managed to secure 445/500 and currently doing my BCA degree at Madras Christian College also currently living at Valasaravakkam",
+        "t-edu1-badge": "Present",
+        "t-edu1-title": "B.C.A.",
+        "t-edu1-inst": "Madras Christian College (MCC)",
+        "t-edu1-desc":
+          "Currently pursuing my Bachelor of Computer Applications degree in Chennai, focusing on modern software development practices and fundamental computer science principles.",
+        "t-edu2-badge": "Completed 2026",
+        "t-edu2-title": "12th Board Exams",
+        "t-edu2-inst": "High School",
+        "t-edu2-desc":
+          "Successfully completed my 12th board examinations, achieving a final score of 445 out of 500.",
+        "t-int1-title": "Junior Game Developer",
+        "t-int1-company": "St. Joseph's University",
+        "t-int1-dept": "BCA Dept",
+        "t-int1-desc":
+          "Worked within the Game Development department to design and build interactive game mechanics using Unity Studio. Successfully prototyped and deployed multiple fully playable demo games, leveraging Unity Marketplace assets to accelerate development.",
+        "t-int2-title": "Robotics & Hardware Intern",
+        "t-int2-company": "St. Joseph's University",
+        "t-int2-dept": "EEE Dept",
+        "t-int2-desc":
+          "Served as an intern within the EEE Department studying foundational principles of PC hardware architecture. Collaborated on core robotics concepts and gained practical, hands-on knowledge in troubleshooting and diagnosing hardware components.",
+        "t-proj1-title": "Internship Application Portal",
+        "t-proj1-desc":
+          "A simple web application used to collect student details in order to match them with internships based on their skill level. It also features an admin panel for modifying records or the application form itself.",
+        "t-proj1-link": "https://github.com/itz-me-jsj/Application-form",
+        "t-proj2-title": "Micro Center — Shop Manager",
+        "t-proj2-desc":
+          "A desktop application used to manage computer repair/hardware shops. It handles live stock inventory, client orders, and repair tracking and more, all backed by MySQL.",
+        "t-proj2-link":
+          "https://github.com/itz-me-jsj/micro-center-inventory-manager",
+        "t-contact-heading": "Have a project or looking for a developer?",
+        "t-contact-sub":
+          "I'm open to full-time roles, internships, and exciting collaborations.",
+        "t-contact-address":
+          "11-B Sanathi Street Kamachi Nagar Valasarabakkam Chennai-87",
+        "t-contact-phone": "7200228537",
+        "t-footer": "© 2026 Jeswin. Made with love peace out.",
+      };
+      const DEFAULT_LINKS = {
+        "l-github": "https://github.com/itz-me-jsj",
+        "l-linkedin":
+          "https://www.linkedin.com/in/jeswin-samuel-jeyaraj-bb5346442",
+        "l-twitter": "https://twitter.com/jesw55674",
+        "l-instagram": "https://instagram.com/jeswin_sjw",
+        "l-email": "jeswinwilson29@gmail.com",
+      };
+      function applyDefaults(map) {
+        Object.entries(map).forEach(([id, v]) => {
+          const el = document.getElementById(id);
+          if (el) el.value = v;
+        });
+        autosizeAll();
+      }
+      function restoreTextDefaults() {
+        if (
+          !confirm(
+            "Restore ALL texts on the Edit Texts tab to their defaults?\n\nNothing changes on the site until you press Save.",
+          )
+        )
+          return;
+        applyDefaults(DEFAULT_TEXTS);
+        toast("Texts restored — press Save to apply");
+      }
+      function restoreLinkDefaults() {
+        if (
+          !confirm(
+            "Restore all social links to their defaults?\n\nNothing changes on the site until you press Save.",
+          )
+        )
+          return;
+        applyDefaults(DEFAULT_LINKS);
+        toast("Links restored — press Save to apply");
+      }
+
+      function qText(selector) {
+        const el = doc.querySelector(selector);
+        return el ? el.textContent.trim() : "";
+      }
+
+      function populateFields() {
+        if (!doc) return;
+
+        // ── Hero ──
+        const heroSection = doc.getElementById("home");
+        if (heroSection) {
+          const gradientSpan = heroSection.querySelector(
+            ".kinetic-gradient-text",
+          );
+          if (gradientSpan)
+            document.getElementById("t-hero-name").value =
+              gradientSpan.textContent.trim();
+
+          const h2 = heroSection.querySelector("h2");
+          if (h2)
+            document.getElementById("t-hero-headline").value =
+              h2.textContent.trim();
+
+          const desc = heroSection.querySelector("p.text-slate-400");
+          if (desc)
+            document.getElementById("t-hero-desc").value =
+              desc.textContent.trim();
+        }
+
+        // ── About ──
+        const aboutSection = doc.getElementById("about");
+        if (aboutSection) {
+          const ps = aboutSection.querySelectorAll("div.space-y-5 p");
+          document.getElementById("t-about").value = [...ps]
+            .map((p) => p.textContent.trim())
+            .join(" ");
+        }
+
+        // ── Education / Internships / Projects ──
+        CARD_MAP.forEach((c) => {
+          const card = cardEl(c);
+          if (!card) return;
+          Object.entries(c.f).forEach(([id, sel]) => {
+            const el = card.querySelector(sel);
+            if (el) document.getElementById(id).value = el.textContent.trim();
+          });
+          if (c.link) {
+            const l = findLink(c.link[0]);
+            if (l) document.getElementById(c.link[1]).value = getLinkVal(l);
+          }
+        });
+
+        // ── Contact ──
+        const contactSection = doc.getElementById("contact");
+        if (contactSection) {
+          const heading = contactSection.querySelector("h2");
+          const sub = contactSection.querySelector("p.text-slate-400.text-xs");
+          if (heading)
+            document.getElementById("t-contact-heading").value =
+              heading.textContent.trim();
+          if (sub)
+            document.getElementById("t-contact-sub").value =
+              sub.textContent.trim();
+
+          // Find address and phone
+          const allPs = contactSection.querySelectorAll(
+            "p.text-xs.text-slate-300",
+          );
+          allPs.forEach((p) => {
+            const label = p.parentElement?.querySelector(
+              '[class*="tracking-wider"]',
+            );
+            if (label) {
+              const labelText = label.textContent.trim().toLowerCase();
+              if (labelText.includes("location"))
+                document.getElementById("t-contact-address").value =
+                  p.textContent.trim();
+              if (labelText.includes("phone"))
+                document.getElementById("t-contact-phone").value =
+                  p.textContent.trim();
+            }
+          });
+        }
+
+        // ── Footer ──
+        const footer = doc.querySelector("footer p");
+        if (footer)
+          document.getElementById("t-footer").value = footer.textContent.trim();
+
+        // ── Links ──
+        const SOC = {
+          github: "l-github",
+          linkedin: "l-linkedin",
+          twitter: "l-twitter",
+          instagram: "l-instagram",
+        };
+        Object.entries(SOC).forEach(([k, id]) => {
+          const el = findLink(k);
+          if (el) document.getElementById(id).value = getLinkVal(el);
+        });
+        const emailEl = findLink("email");
+        if (emailEl)
+          document.getElementById("l-email").value = getLinkVal(
+            emailEl,
+          ).replace(/^mailto:/i, "");
+
+        // ── Hero Image ──
+        const heroImg = doc.querySelector("#home img");
+        if (heroImg) {
+          const src = heroImg.getAttribute("src") || "";
+          document.getElementById("i-hero").value = src;
+        }
+
+        // ── Project images + resume ──
+        ["proj1", "proj2"].forEach((k) => {
+          const im = cardImg(k);
+          if (im)
+            document.getElementById("i-" + k).value =
+              im.getAttribute("src") || "";
+        });
+        const resumeLink = findLink("resume-preview");
+        if (resumeLink)
+          document.getElementById("r-file").value = getLinkVal(resumeLink);
+        ["hero", "proj1", "proj2", "resume"].forEach((k) =>
+          loadThumb(k, document.getElementById(ASSETS[k].field).value.trim()),
+        );
+
+        setGlow(doc.documentElement.getAttribute("data-glow") !== "off");
+        // ── Theme variables (glow, gradient, background, font) ──
+        const tv = doc.getElementById("theme-vars");
+        if (tv) {
+          const vars = {};
+          (tv.textContent.match(/--[\w-]+\s*:[^;]+;/g) || []).forEach((d) => {
+            const k = d.indexOf(":");
+            vars[d.slice(2, k).trim()] = d
+              .slice(k + 1)
+              .replace(/;$/, "")
+              .trim();
+          });
+          const setC = (name, val) => {
+            if (val && /^#[0-9a-f]{6}$/i.test(val)) {
+              document.getElementById("c-" + name).value = val;
+              document.getElementById("c-" + name + "-hex").value = val;
+            }
+          };
+          setC("brand", vars["brand"]);
+          setC("brand-light", vars["brand-light"]);
+          setC("gold", vars["gold"]);
+          setC("grad-edge", vars["grad-edge"]);
+          setC("grad-1", vars["grad-1"]);
+          setC("grad-2", vars["grad-2"]);
+          setC("bg", vars["site-bg"]);
+          if (vars["glow-rgb"]) {
+            const [r, g, b] = vars["glow-rgb"]
+              .split(",")
+              .map((n) => parseInt(n, 10));
+            setC(
+              "glow",
+              "#" +
+                [r, g, b]
+                  .map((n) => (n || 0).toString(16).padStart(2, "0"))
+                  .join(""),
+            );
+          }
+          const ff = FONTS.find((x) => x.stack === vars["font-body"]);
+          if (ff) document.getElementById("f-family").value = ff.name;
+          if (vars["font-size"])
+            document.getElementById("f-size").value =
+              parseInt(vars["font-size"], 10) || 16;
+          document.getElementById("hero-scale").value =
+            parseInt(vars["hero-scale"], 10) || 100;
+          updateHeroScale();
+          updatePreviews();
+        }
+
+        // Collapse source-code indentation/newlines so text shows cleanly
+        document
+          .querySelectorAll(
+            '#tab-texts input[type="text"], #tab-texts textarea, #tab-links input',
+          )
+          .forEach((el) => {
+            el.value = el.value.replace(/\s+/g, " ").trim();
+          });
+        autosizeAll();
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // APPLY FORM FIELDS BACK TO PARSED DOC
+      // ═══════════════════════════════════════════════════════════
+      function applyFieldsToDoc() {
+        if (!doc) return;
+
+        // ── Hero ──
+        const heroSection = doc.getElementById("home");
+        if (heroSection) {
+          const gradientSpan = heroSection.querySelector(
+            ".kinetic-gradient-text",
+          );
+          if (gradientSpan)
+            gradientSpan.textContent =
+              document.getElementById("t-hero-name").value;
+
+          const h2 = heroSection.querySelector("h2");
+          if (h2)
+            h2.textContent = document.getElementById("t-hero-headline").value;
+
+          const desc = heroSection.querySelector("p.text-slate-400");
+          if (desc)
+            desc.textContent = document.getElementById("t-hero-desc").value;
+        }
+
+        // ── About ──
+        const aboutSection = doc.getElementById("about");
+        if (aboutSection) {
+          const ps = aboutSection.querySelectorAll("div.space-y-5 p");
+          if (ps[0])
+            ps[0].textContent = document.getElementById("t-about").value;
+          for (let k = 1; k < ps.length; k++) ps[k].remove();
+        }
+
+        // ── Education / Internships / Projects ──
+        CARD_MAP.forEach((c) => {
+          const card = cardEl(c);
+          if (!card) return;
+          Object.entries(c.f).forEach(([id, sel]) => {
+            const el = card.querySelector(sel);
+            if (el) el.textContent = document.getElementById(id).value;
+          });
+          if (c.link) {
+            const l = findLink(c.link[0]);
+            if (l)
+              setLinkEl(l, normUrl(document.getElementById(c.link[1]).value));
+          }
+        });
+
+        // ── Contact ──
+        const contactSection = doc.getElementById("contact");
+        if (contactSection) {
+          const heading = contactSection.querySelector("h2");
+          const sub = contactSection.querySelector("p.text-slate-400.text-xs");
+          if (heading)
+            heading.textContent =
+              document.getElementById("t-contact-heading").value;
+          if (sub)
+            sub.textContent = document.getElementById("t-contact-sub").value;
+
+          const allPs = contactSection.querySelectorAll(
+            "p.text-xs.text-slate-300",
+          );
+          allPs.forEach((p) => {
+            const label = p.parentElement?.querySelector(
+              '[class*="tracking-wider"]',
+            );
+            if (label) {
+              const labelText = label.textContent.trim().toLowerCase();
+              if (labelText.includes("location"))
+                p.textContent =
+                  document.getElementById("t-contact-address").value;
+              if (labelText.includes("phone"))
+                p.textContent =
+                  document.getElementById("t-contact-phone").value;
+            }
+          });
+        }
+
+        // ── Footer ──
+        const footer = doc.querySelector("footer p");
+        if (footer)
+          footer.textContent = document.getElementById("t-footer").value;
+
+        // ── Links (empty box = opens a blank page) ──
+        const SOCA = {
+          github: "l-github",
+          linkedin: "l-linkedin",
+          twitter: "l-twitter",
+          instagram: "l-instagram",
+        };
+        Object.entries(SOCA).forEach(([k, id]) => {
+          const el = findLink(k);
+          if (el) setLinkEl(el, normUrl(document.getElementById(id).value));
+        });
+        const emailA = findLink("email");
+        if (emailA) {
+          const v = document
+            .getElementById("l-email")
+            .value.trim()
+            .replace(/^mailto:/i, "");
+          setLinkEl(emailA, v ? "mailto:" + v : "");
+        }
+
+        // ── Hero Image ──
+        const heroImg = doc.querySelector("#home img");
+        if (heroImg) {
+          if (document.getElementById("i-hero").value.trim())
+            heroImg.setAttribute(
+              "src",
+              document.getElementById("i-hero").value.trim(),
+            );
+        }
+        ["proj1", "proj2"].forEach((k) => {
+          const im = cardImg(k);
+          const v = document.getElementById("i-" + k).value.trim();
+          if (im && v) im.setAttribute("src", v);
+        });
+        const rf = document.getElementById("r-file").value.trim();
+        ["resume-preview", "resume-download"].forEach((k) => {
+          const l = findLink(k);
+          if (l) setLinkEl(l, rf, { download: k === "resume-download" });
+        });
+
+        // ── Theme variables ──
+        const fam =
+          FONTS.find(
+            (x) => x.name === document.getElementById("f-family").value,
+          ) || FONTS[0];
+        const size =
+          parseInt(document.getElementById("f-size").value, 10) || 16;
+        const glow = hexVal("c-glow-hex") || "#65B891";
+        const brand = hexVal("c-brand-hex") || "#65B891",
+          light = hexVal("c-brand-light-hex") || "#98e2c6",
+          gold = hexVal("c-gold-hex") || "#fbbf24";
+        const sp = (h) => hexToRgbStr(h).replace(/, /g, " ");
+        const brandDark =
+          "#" +
+          [0, 8, 16]
+            .map((sh, k) =>
+              Math.round(
+                ((parseInt(brand.slice(1), 16) >> (16 - sh)) & 255) *
+                  [0.7723, 0.8641, 0.8138][k],
+              )
+                .toString(16)
+                .padStart(2, "0"),
+            )
+            .join("");
+        const varsCss =
+          "\n:root {\n" +
+          "  --brand: " +
+          brand +
+          ";\n  --brand-rgb: " +
+          sp(brand) +
+          ";\n" +
+          "  --brand-light: " +
+          light +
+          ";\n  --brand-light-rgb: " +
+          sp(light) +
+          ";\n" +
+          "  --brand-dark: " +
+          brandDark +
+          ";\n  --brand-dark-rgb: " +
+          sp(brandDark) +
+          ";\n" +
+          "  --gold: " +
+          gold +
+          ";\n  --gold-rgb: " +
+          sp(gold) +
+          ";\n" +
+          "  --glow-rgb: " +
+          hexToRgbStr(glow) +
+          ";\n" +
+          "  --grad-edge: " +
+          (hexVal("c-grad-edge-hex") || "#ffffff") +
+          ";\n" +
+          "  --grad-1: " +
+          (hexVal("c-grad-1-hex") || "#98e2c6") +
+          ";\n" +
+          "  --grad-2: " +
+          (hexVal("c-grad-2-hex") || "#65B891") +
+          ";\n" +
+          "  --site-bg: " +
+          (hexVal("c-bg-hex") || "#07080f") +
+          ";\n" +
+          "  --font-body: " +
+          fam.stack +
+          ";\n" +
+          "  --font-size: " +
+          size +
+          "px;\n" +
+          "  --hero-scale: " +
+          heroScale() +
+          ";\n}\n";
+        let vs = doc.getElementById("theme-vars");
+        if (!vs) {
+          vs = doc.createElement("style");
+          vs.id = "theme-vars";
+          doc.head.appendChild(vs);
+        }
+        vs.textContent = varsCss;
+        if (glowOn) doc.documentElement.removeAttribute("data-glow");
+        else doc.documentElement.setAttribute("data-glow", "off");
+        const fl = doc.querySelector('link[href*="fonts.googleapis.com/css2"]');
+        if (fl) {
+          const fams = [
+            "Caveat:wght@600;700",
+            "Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900",
+            "JetBrains+Mono:wght@400;500;700",
+          ];
+          if (fam.spec) fams.push(fam.spec);
+          fl.setAttribute(
+            "href",
+            "https://fonts.googleapis.com/css2?" +
+              fams.map((x) => "family=" + x).join("&") +
+              "&display=swap",
+          );
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // COLOR PICKER SYNC
+      // ═══════════════════════════════════════════════════════════
+      [
+        "brand",
+        "brand-light",
+        "gold",
+        "glow",
+        "grad-edge",
+        "grad-1",
+        "grad-2",
+        "bg",
+      ].forEach((name) => {
+        const picker = document.getElementById("c-" + name);
+        const hex = document.getElementById("c-" + name + "-hex");
+        if (picker && hex) {
+          picker.addEventListener("input", () => (hex.value = picker.value));
+          hex.addEventListener("input", () => {
+            const v = hexVal("c-" + name + "-hex");
+            if (v) picker.value = v;
+          });
+        }
+      });
+
+      // ═══════════════════════════════════════════════════════════
+      // ACCOUNTS MANAGEMENT
+      // ═══════════════════════════════════════════════════════════
+      function renderAccountsTab() {
+        const accs = getAccounts();
+        const loginOn = isLoginEnabled();
+        const toggle = document.getElementById("loginToggle");
+        const label = document.getElementById("loginToggleLabel");
+
+        if (loginOn) {
+          toggle.classList.add("on");
+          label.textContent =
+            "Login enabled — users must sign in to access admin";
+        } else {
+          toggle.classList.remove("on");
+          label.textContent =
+            "Login disabled — anyone can access the admin panel";
+        }
+
+        let html = "";
+        if (accs.length === 0) {
+          html =
+            '<p style="font-size:0.8rem;color:var(--text3);">No accounts created yet.</p>';
+        } else {
+          html =
+            '<table class="acc-table"><thead><tr><th>Username</th><th>Password</th><th></th></tr></thead><tbody>';
+          accs.forEach((a, i) => {
+            html += "<tr><td><strong>" + escHtml(a.username) + "</strong></td>";
+            html +=
+              '<td><span class="mono">' + escHtml(a.password) + "</span></td>";
+            html +=
+              '<td><button class="btn btn-danger" style="font-size:0.65rem;padding:0.25rem 0.6rem;" onclick="removeAccount(' +
+              i +
+              ')">Remove</button></td></tr>';
+          });
+          html += "</tbody></table>";
+        }
+        document.getElementById("accountsTable").innerHTML = html;
+      }
+
+      function toggleLogin() {
+        setLoginEnabled(!isLoginEnabled());
+        renderAccountsTab();
+        toast("Login setting updated");
+      }
+
+      function addAccount() {
+        const u = document.getElementById("newAccUser").value.trim();
+        const p = document.getElementById("newAccPass").value;
+        if (!u || !p) {
+          toast("Fill in both username and password", true);
+          return;
+        }
+        const accs = getAccounts();
+        if (accs.find((a) => a.username === u)) {
+          toast("Username already exists!", true);
+          return;
+        }
+        accs.push({ username: u, password: p });
+        saveAccounts(accs);
+        document.getElementById("newAccUser").value = "";
+        document.getElementById("newAccPass").value = "";
+        renderAccountsTab();
+        toast("Account added: " + u);
+      }
+
+      function removeAccount(index) {
+        const accs = getAccounts();
+        if (accs.length <= 1) {
+          toast("Cannot remove the last account!", true);
+          return;
+        }
+        const removed = accs.splice(index, 1);
+        saveAccounts(accs);
+        renderAccountsTab();
+        toast("Removed account: " + removed[0].username);
+      }
+
+      function escHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // INIT
+      // ═══════════════════════════════════════════════════════════
+      initLoginScreen();
+    </script>
+  </body>
+</html>
